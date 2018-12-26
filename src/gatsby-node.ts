@@ -1,0 +1,122 @@
+import { Params, PluginOptions } from './constants';
+import fs from 'fs';
+import path from 'path';
+import { RoutingRules } from 'aws-sdk/clients/s3';
+import { withoutLeadingSlash, withTrailingSlash } from './util';
+import { DEFAULT_OPTIONS, CACHING_PARAMS } from './constants';
+
+// converts gatsby redirects + rewrites to S3 routing rules
+// https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
+const getRules = (routes: GatsbyRedirect[], rewriting = false): RoutingRules => (
+    routes.map(route => ({
+        Condition: {
+            KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
+            ...(rewriting ? {
+                HttpErrorCodeReturnedEquals: '404'
+            } : {})
+        },
+        Redirect: {
+            ...(!rewriting ? {
+                ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath))
+            } : {
+                ReplaceKeyWith: withoutLeadingSlash(route.toPath)
+            }),
+            HttpRedirectCode: route.isPermanent ? '301' : '302'
+        }
+    }))
+);
+
+let params: Params = {};
+
+export const onPreBootstrap = ({ reporter }: any, { bucketName }: PluginOptions) => {
+    if (!bucketName) {
+        reporter.panic(`
+      "bucketName" is a required option for gatsby-plugin-s3
+      See docs here - https://github.com/jariz/gatsby-plugin-s3
+      `);
+        process.exit(1);
+    }
+
+    params = {};
+};
+
+// I have no understanding of what createPagesStatefully is supposed to accomplish.
+// all I know is that it's being ran after createPages which is what I need to create pages after the other plugins have.
+export const createPagesStatefully = ({ store, actions: { createPage } }: any, userPluginOptions: PluginOptions) => {
+    const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
+    const { redirects, pages }: GatsbyState = store.getState();
+
+    if (pluginOptions.generateIndexPageForRedirect) {
+        const indexRedirect = redirects.find(redirect => redirect.fromPath === '/');
+        const indexPage = Array.from(pages.values()).find(page => page.path === '/');
+        if (indexRedirect) {
+            if (!indexPage) {
+                // no index page yet, create one so we can add a redirect to it's metadata when uploading
+                createPage({
+                    path: '/',
+                    component: path.join(__dirname, './fake-index.js')
+                });
+            }
+
+            params = {
+                ...params,
+                'index.html': {
+                    WebsiteRedirectLocation: indexRedirect.toPath
+                }
+            };
+        }
+    }
+};
+
+export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) => {
+    const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
+    const { redirects, pages, program }: GatsbyState = store.getState();
+
+    let rewrites: GatsbyRedirect[] = [];
+    if (pluginOptions.generateMatchPathRewrites) {
+        rewrites = Array.from(pages.values())
+            .filter((page): page is Required<GatsbyPage> => !!page.matchPath && page.matchPath !== page.path)
+            .map(page => ({
+                // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
+                // the syntax that gatsby invented here does not work with routing rules.
+                // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
+                fromPath:
+                    page.matchPath.endsWith('*')
+                        ? page.matchPath.substring(0, page.matchPath.length - 1)
+                        : page.matchPath,
+                toPath: page.path
+            }));
+    }
+
+    if (pluginOptions.mergeCachingParams) {
+        params = {
+            ...params,
+            ...CACHING_PARAMS
+        };
+    }
+
+    params = {
+        ...params,
+        ...pluginOptions.params
+    };
+
+    const routingRules = [
+        ...getRules(redirects.filter(redirect => redirect.fromPath !== '/')),
+        ...getRules(rewrites, true)
+    ];
+
+    fs.writeFileSync(
+        path.join(program.directory, './.cache/s3.routingRules.json'),
+        JSON.stringify(routingRules)
+    );
+
+    fs.writeFileSync(
+        path.join(program.directory, './.cache/s3.params.json'),
+        JSON.stringify(params)
+    );
+
+    fs.writeFileSync(
+        path.join(program.directory, './.cache/s3.config.json'),
+        JSON.stringify(pluginOptions)
+    );
+};
