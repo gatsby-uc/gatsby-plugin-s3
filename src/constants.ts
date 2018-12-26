@@ -59,7 +59,10 @@ export const DEFAULT_OPTIONS: PluginOptions = {
 };
 
 export const CACHING_PARAMS: Params = {
-    'static/*': {
+    '**.html': {
+        CacheControl: 'public, max-age=0, must-revalidate'
+    },
+    'static/**': {
         CacheControl: 'public, max-age=31536000, immutable',
     },
     'sw.js': {
