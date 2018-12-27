@@ -1,6 +1,6 @@
 # gatsby-plugin-s3
 
-![](https://jari.lol/3fZwdk97by.gif)  
+![](https://jari.lol/KCB4gNo4Xg.gif)  
 
 Enables you to deploy your gatsby site to a S3 bucket.  
 Requires very little configuration, while optimizing your site as much as possible.
