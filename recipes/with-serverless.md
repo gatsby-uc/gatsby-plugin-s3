@@ -47,7 +47,7 @@ resources:
 
 What is happening here? Let's break it down a bit.  
 With this config file you have a setup that is very similar to what the plugin's `deploy` command does.  
-We configure the plugin, and create a 'resource' (`FrontendBucket`) that will ensure our bucket gets created before we deploy to it.     
+We configure the plugin, and declare a 'resource' (`FrontendBucket`) that will ensure our bucket gets created before we deploy to it.     
 
 This makes use of 3 files that the `deploy` command of gatsby-plugin-s3 uses internally as well:
 
