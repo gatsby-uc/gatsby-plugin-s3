@@ -106,15 +106,27 @@ Learn how to override the content type gatsby-plugin-s3 sets on your files.
 [Serverless](https://serverless.com) can be used in combination with gatsby-plugin-s3, swapping the plugin's deployment step for `sls deploy` instead.  
 Serverless will give you the added advantage of being able to add lambda functions, a cloudfront CDN in front of your bucket and other functionality, all in the same repo, deployment step and CloudFormation stack while still being able to profit from all the optimisations gatsby-plugin-s3 does.
 
-- [See the recipe](TODO)  
+- [See the recipe](recipes/with-serverless.md)  
 Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
-- [See the `with-serverless` example](TODO)  
+- [See the `with-serverless` example](examples/with-serverless)  
 Advanced example that will show you how to set up a fully featured serverless stack with:  
     - S3.
     - CloudFront in front of S3. (optional)
     - Lambda serverless functions.
 
-## Why not use amplify-cli?
+## Design choices made
+My rationalizations for the choices I made regarding this plugin, mostly eying at what's being recommended on the gatsby website.
+
+## Why have a separate deploy command?
+For context: there's [a tutorial out there](http://lofi.fi/deploying-gatsbyjs-to-amazon-aws/) featured on the gatsby site telling you to add a post build hook that uploads your files.  
+I believe deployment is a separate process, and a conscious choice a developer should make.  
+
+_For instance_; if I were to run a build on a project that I'm new to, I would possibly be overriding production with my dev build!
+The build process is very much something else than the deployment step.
+
+As a separate bonus: making the deployment step a separate command also allows you to easily swap out it out for other deployment processes (e.g. [serverless](examples/with-serverless))
+
+## Why not just use amplify-cli?
 
 The [gatsby docs recommend amplify-cli](https://www.gatsbyjs.org/docs/deploying-to-s3-cloudfront#getting-started-aws-amplify), however, I tend to disagree.
 

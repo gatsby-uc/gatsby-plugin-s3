@@ -1,0 +1,86 @@
+service: gatsby-plugin-s3
+
+plugins:
+- serverless-s3-sync
+
+provider:
+  name: aws
+  region: ${file(./.cache/s3.config.json):region}
+
+custom:
+  frontendBucketName: ${file(./.cache/s3.config.json):bucketName}
+  s3Sync:
+  - bucketName: ${self:custom.frontendBucketName}
+    localDir: public
+    acl: public-read
+    defaultContentType: text/html
+    params: ${file(./.cache/s3.params.json)}
+
+resources:
+  Resources:
+    FrontendBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.frontendBucketName}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: 404.html
+          RoutingRules: ${file(./.cache/s3.sls.routingRules.json)}
+
+# UNCOMMENT THE FOLLOWING if you wish to add cloudfront.
+# Be aware that cloudfront deploys take a long time so the deploy script may take up to 
+# 20 mins when deploying changes to the cloudfront configuration values.
+
+#    WebAppCloudFrontDistribution:
+#      Type: AWS::CloudFront::Distribution
+#      Properties:
+#        DistributionConfig:
+#          Origins:
+#          - DomainName: ${self:custom.frontendBucketName}.s3-website-${self:provider.region}.amazonaws.com
+#            Id: Frontend
+#            CustomOriginConfig:
+#              HTTPPort: 80
+#              HTTPSPort: 443
+#              OriginProtocolPolicy: http-only
+#          Enabled: 'true'
+#          ## Uncomment the following section in case you are using a custom domain
+##          Aliases:
+##          - mysite.com
+#          DefaultRootObject: index.html
+#          CustomErrorResponses:
+#          - ErrorCode: 404
+#            ResponseCode: 200
+#            ResponsePagePath: /index.html
+#          DefaultCacheBehavior:
+#            AllowedMethods:
+#            - DELETE
+#            - GET
+#            - HEAD
+#            - OPTIONS
+#            - PATCH
+#            - POST
+#            - PUT
+#            ## The origin id defined above
+#            TargetOriginId: Frontend
+#            ## Defining if and how the QueryString and Cookies are forwarded to the origin which in this case is S3
+#            ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            ## The protocol that users can use to access the files in the origin. To allow HTTP use `allow-all`
+#            ViewerProtocolPolicy: redirect-to-https
+#          ## The certificate to use when viewers use HTTPS to request objects.
+#          ViewerCertificate:
+#            CloudFrontDefaultCertificate: 'true'
+#          ## Uncomment the following section in case you want to enable logging for CloudFront requests
+#          # Logging:
+#          #   IncludeCookies: 'false'
+#          #   Bucket: mylogs.s3.amazonaws.com
+#          #   Prefix: myprefix
+#
+#  ## In order to print out the hosted domain via `serverless info` we need to define the DomainName output for CloudFormation
+#  Outputs:
+#    WebAppCloudFrontDistributionOutput:
+#      Value:
+#        'Fn::GetAtt': [ WebAppCloudFrontDistribution, DomainName ]

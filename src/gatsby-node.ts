@@ -1,9 +1,15 @@
-import { Params, PluginOptions } from './constants';
+import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './constants';
 import fs from 'fs';
 import path from 'path';
-import { RoutingRules } from 'aws-sdk/clients/s3';
+import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withTrailingSlash } from './util';
-import { DEFAULT_OPTIONS, CACHING_PARAMS } from './constants';
+
+// for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
+// so we have a separate object with those differing keys which we can throw into the sls config.
+interface ServerlessRoutingRule {
+    RoutingRuleCondition: RoutingRule['Condition'],
+    RedirectRule: RoutingRule['Redirect']
+};
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
@@ -105,9 +111,19 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         ...getRules(rewrites, true)
     ];
 
+    const slsRoutingRules: ServerlessRoutingRule[] = routingRules.map(({ Redirect, Condition }) => ({
+        RoutingRuleCondition: Condition,
+        RedirectRule: Redirect
+    }));
+
     fs.writeFileSync(
         path.join(program.directory, './.cache/s3.routingRules.json'),
         JSON.stringify(routingRules)
+    );
+
+    fs.writeFileSync(
+        path.join(program.directory, './.cache/s3.sls.routingRules.json'),
+        JSON.stringify(slsRoutingRules)
     );
 
     fs.writeFileSync(
