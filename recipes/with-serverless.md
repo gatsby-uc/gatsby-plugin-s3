@@ -54,7 +54,7 @@ This makes use of 3 files that the `deploy` command of gatsby-plugin-s3 uses int
 - `s3.sls.routingRules.json`: the generated [routing rules](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html)  
 - `s3.params.json`: the generated [params](https://github.com/aws/aws-sdk-js/blob/83ebfbcc6ab30b9a486b15cdede26a1bd03c72e4/clients/s3.d.ts#L3573) for all files.  
 - `s3.config.json`: a dump of the options that get passed to the plugin.  
-You can replace these with hardcoded values into the config if you wish, using the config however makes the gatsby-plugin-s3 the single source of truth.  
+You can replace these with hardcoded values into the config if you wish, using the config however makes the plugin configuration the single source of truth regarding bucketname & region.  
 
 **That's it!**  
 You can now start adding [lambda functions](https://serverless.com/framework/docs/providers/aws/guide/functions/), [cloudfront](https://github.com/serverless/examples/tree/master/aws-node-single-page-app-via-cloudfront), and other AWS services to your config file.
