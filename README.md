@@ -5,15 +5,15 @@
 Enables you to deploy your gatsby site to a S3 bucket.  
 Requires very little configuration, while optimizing your site as much as possible.
 
-Features:
+## Features:
 
-- Fully handles the deployment process for you, all you need to configure is your bucket name.
-    - Creates/updates bucket with optimal configuration applied.
+- 📦 Fully handles the deployment process for you, all you need to configure is your bucket name.
+    - Automatically creates/updates bucket with optimal configuration applied.
     - Syncs gatsby files to the bucket & updates metadata.
-- Redirects.
-- Optimizes caching for you.
-- Add your own params to uploaded S3 objects (if you wish).
-- Optional serverless framework support if you want to take things a step further.
+- ⏭ Redirects.
+- 💾 Optimizes caching for you.
+- ☁️ Optional serverless framework support if you want to take things a step further.
+- ✏️ Add your own params to uploaded S3 objects (if you wish).
 
 ## Usage
 
@@ -111,7 +111,7 @@ Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
 - [See the `with-serverless` example](TODO)  
 Advanced example that will show you how to set up a fully featured serverless stack with:  
     - S3.
-    - CloudFront in front of S3.
+    - CloudFront in front of S3. (optional)
     - Lambda serverless functions.
 
 ## Why not use amplify-cli?
