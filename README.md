@@ -64,7 +64,7 @@ If you don't want to have your credentials saved globally (i.e. you're dealing w
 AWS_ACCESS_KEY_ID=xxxx AWS_SECRET_ACCESS_KEY=xxxx npm run deploy
 ```
 
-Additionally, these can be set in a local `.env` file too. (TODO: instruct how)
+Additionally, these can be set in a local `.env` file too, but this requires a bit more setup work. [See the recipe here](recipes/with-dotenv.md).
 
 ## Configuration
 Most of the aspects of the plugin can be configured.  
@@ -91,9 +91,10 @@ Several recipes are available:
 
 ### Using a different bucket name per environment
 
-Learn how to setup a different bucket name, depending on your environment.
+Learn how to retrieve AWS credentials from a .env file.
+Additionally setup a different bucket name depending on your environment.
 
-- [See the recipe](TODO)
+- [See the recipe](recipes/with-dotenv.md)
 
 ### Using a different content type for files
 
