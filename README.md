@@ -117,7 +117,7 @@ Advanced example that will show you how to set up a fully featured serverless st
 ## Design choices made
 My rationalizations for the choices I made regarding this plugin, mostly eying at what's being recommended on the gatsby website.
 
-## Why have a separate deploy command?
+### Why have a separate deploy command?
 For context: there's [a tutorial out there](http://lofi.fi/deploying-gatsbyjs-to-amazon-aws/) featured on the gatsby site telling you to add a post build hook that uploads your files.  
 I believe deployment is a separate process, and a conscious choice a developer should make.  
 
@@ -126,7 +126,7 @@ The build process is very much something else than the deployment step.
 
 As a separate bonus: making the deployment step a separate command also allows you to easily swap out it out for other deployment processes (e.g. [serverless](examples/with-serverless))
 
-## Why not just use amplify-cli?
+### Why not just use amplify-cli?
 
 The [gatsby docs recommend amplify-cli](https://www.gatsbyjs.org/docs/deploying-to-s3-cloudfront#getting-started-aws-amplify), however, I tend to disagree.
 
