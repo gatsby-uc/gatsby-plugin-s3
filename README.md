@@ -134,7 +134,7 @@ The [gatsby docs recommend amplify-cli](https://www.gatsbyjs.org/docs/deploying-
 - Redirects are lost (!)
 - Client only routes will 404 (!!)
 - Gatsby's [recommended caching rules](https://www.gatsbyjs.org/docs/caching/#caching) are not applied.
-- Amplify CLI requires a lot of unnecessary setup steps that are ambiguous between gatsby projects.
+- Amplify CLI requires a lot of unnecessary setup steps that are identical between gatsby projects.
 - Amplify CLI is very hard to use with CI environments (that aren't their own 🙄):
     - Amplify's CLI does not respect environment variables(?!), making it harder to use with a CI environment that isn't amplify.
     - Amplify's 'deploy' command has a prompt that can't be disabled making it impossible to use with CI environments.

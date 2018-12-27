@@ -3,7 +3,7 @@
 By default, the [mime](https://www.npmjs.com/package/mime) module is used to automatically map file extensions to a mime type.  
 If you're finding your files get served with a incorrect content type, you can simply use the params field in the configuration to override this:  
 
-```
+```js
 params: {
     '*.pdf': {
         ContentType: 'application/x-pdf'
