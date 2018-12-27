@@ -153,17 +153,9 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         await Promise.all(promises);
         spinner.succeed('Synced.');
 
-        // might as well ask the AWS sdk again where the bucket is at
-        // because the global config is not very trustworthy
-        const { $response: { data } } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
-
-        if (!data) {
-            throw new Error('Unable to determine bucket region');
-        }
-
         console.log(chalk`
         {bold Your website is online at:}
-        {blue.underline http://${config.bucketName}.s3-website-${guessRegion(s3, data.LocationConstraint) || 'us-east-1'}.amazonaws.com}
+        {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
 `);
     }
     catch (ex) {
