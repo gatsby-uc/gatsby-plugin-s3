@@ -5,10 +5,13 @@ It will give you the added advantage of being able to add lambda functions, a cl
 
 -------
 
+## Install serverless and required plugins
 First things first: install serverless and the s3 sync plugin.
 ```bash
 npm i -D serverless serverless-s3-sync
 ```
+
+## Create serverless config
 
 Next up, create a serverless config file (`serverless.yaml`), that makes use of the routing rules and params that gatsby-plugin-s3 generates.
 An example:
@@ -56,6 +59,17 @@ This makes use of 3 files that the `deploy` command of gatsby-plugin-s3 uses int
 - `s3.config.json`: a dump of the options that get passed to the plugin.  
 You can replace these with hardcoded values into the config if you wish, using the config however makes the plugin configuration the single source of truth regarding bucketname & region.  
 
-**That's it!**  
+## Swap out deploy script
+
+OK, Final step: now that serverless is good to go, swap out your old deploy script with your shiny new serverless one✨
+
+```diff
+"scripts": {
+- "deploy": "gatsby-plugin-s3 deploy",
++ "deploy": "sls deploy",
+}
+```
+
+## That's it!  
 You can now start adding [lambda functions](https://serverless.com/framework/docs/providers/aws/guide/functions/), [cloudfront](https://github.com/serverless/examples/tree/master/aws-node-single-page-app-via-cloudfront), and other AWS services to your config file.
 
