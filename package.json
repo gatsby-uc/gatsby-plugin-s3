@@ -1,8 +1,8 @@
 {
     "name": "gatsby-plugin-s3",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Enables you to deploy your gatsby site to a S3 bucket.",
-    "main": "index.js",
+    "main": "bin.js",
     "bin": "bin.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
