@@ -25,7 +25,7 @@ export interface PluginOptions {
     // see all available params here: 
     // https://github.com/aws/aws-sdk-js/blob/83ebfbcc6ab30b9a486b15cdede26a1bd03c72e4/clients/s3.d.ts#L3573
     // @example:
-    // { '/static/*': {
+    // { '/static/**': {
     //     CacheControl: 'public, max-age=31536000, immutable'
     // },
     params?: Params,
