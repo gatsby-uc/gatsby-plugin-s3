@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import '@babel/polyfill';
-import S3, { RoutingRules } from 'aws-sdk/clients/s3';
+import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs, { Argv } from 'yargs';
 import { CACHE_FILES, Params, PluginOptions } from './constants';
-import { readJson } from 'fs-extra';
+import { readFile, readJson } from 'fs-extra';
 import klaw from 'klaw';
 import PrettyError from 'pretty-error';
 import streamToPromise from 'stream-to-promise';
@@ -17,6 +17,7 @@ import minimatch from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
+import { createHash } from 'crypto';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -57,6 +58,24 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     }
     return returned;
 };
+
+const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Promise<ObjectList> => {
+    const list: ObjectList = [];
+    const response = await s3.listObjectsV2({
+        Bucket: bucketName,
+        ContinuationToken: token
+    }).promise();
+    
+    if (response.Contents) {
+        list.push(...response.Contents);
+    }
+    
+    if (response.NextContinuationToken) {
+        list.push(...await listAllObjects(s3, bucketName, response.NextContinuationToken));
+    }
+    
+    return list;
+}
 
 const deploy = async ({ yes }: { yes: boolean }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
@@ -127,29 +146,49 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         
         await s3.putBucketWebsite(websiteConfig).promise();
 
+        spinner.text = 'Listing objects...';
+        spinner.color = 'green';
+        const objects = await listAllObjects(s3, config.bucketName);
+
         spinner.color = 'cyan';
-        spinner.text = 'Uploading...';
+        spinner.text = 'Syncing...';
         const dir = join(process.cwd(), 'public');
         const stream = klaw(dir);
         const promises: Promise<any>[] = [];
 
         stream.on('data', async ({ path, stats }) => {
-            if (stats.isDirectory()) {
+            if (!stats.isFile()) {
                 return;
             }
 
             const key = relative(dir, path);
-            const promise = s3.upload({
-                Key: key,
-                Body: fs.createReadStream(path),
-                Bucket: config.bucketName,
-                ContentType: mime.getType(key) || 'application/octet-stream',
-                ACL: config.acl || 'public-read',
-                ...getParams(key, params)
-            }).promise();
-            promises.push(promise);
-            await promise;
-            spinner.text = chalk`Uploading...\n{dim   Uploaded {cyan ${key}}}`;
+            const buffer = await readFile(path);
+            const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
+            const object = objects.find(object => object.Key === key && object.ETag === tag);
+            
+            if (object) {
+                // object with exact hash already exists, abort.
+                return;
+            }
+            
+            try {
+                const promise = s3.upload({
+                    Key: key,
+                    Body: fs.createReadStream(path),
+                    Bucket: config.bucketName,
+                    ContentType: mime.getType(key) || 'application/octet-stream',
+                    ContentMD5: createHash('md5').update(buffer).digest('base64'),
+                    ACL: config.acl || 'public-read',
+                    ...getParams(key, params)
+                }).promise();
+                promises.push(promise);
+                await promise;
+                spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+            } catch (ex) {
+                spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
+                console.error(pe.render(ex));
+                process.exit(1);
+            }
         });
         
         // now we play the waiting game.
