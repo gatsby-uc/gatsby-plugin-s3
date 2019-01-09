@@ -109,7 +109,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
             await s3.createBucket(params).promise();
         }
 
-        await s3.putBucketWebsite({
+        const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
             Bucket: config.bucketName,
             WebsiteConfiguration: {
                 IndexDocument: {
@@ -117,11 +117,15 @@ const deploy = async ({ yes }: { yes: boolean }) => {
                 },
                 ErrorDocument: {
                     Key: '404.html'
-                },
-                RoutingRules: routingRules
+                }
             }
-        }, () => {
-        }).promise();
+        };
+        
+        if (routingRules.length) {
+            websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
+        }
+        
+        await s3.putBucketWebsite(websiteConfig).promise();
 
         spinner.color = 'cyan';
         spinner.text = 'Uploading...';
