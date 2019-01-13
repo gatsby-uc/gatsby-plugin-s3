@@ -13,7 +13,7 @@ interface ServerlessRoutingRule {
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
-const getRules = (routes: GatsbyRedirect[], rewriting = false): RoutingRules => (
+const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[], rewriting = false): RoutingRules => (
     routes.map(route => ({
         Condition: {
             KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
@@ -27,7 +27,9 @@ const getRules = (routes: GatsbyRedirect[], rewriting = false): RoutingRules => 
             } : {
                 ReplaceKeyWith: withoutLeadingSlash(route.toPath)
             }),
-            HttpRedirectCode: route.isPermanent ? '301' : '302'
+            HttpRedirectCode: route.isPermanent ? '301' : '302',
+            Protocol: pluginOptions.protocol,
+            HostName: pluginOptions.hostname,
         }
     }))
 );
@@ -107,8 +109,8 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     };
 
     const routingRules = [
-        ...getRules(redirects.filter(redirect => redirect.fromPath !== '/')),
-        ...getRules(rewrites, true)
+        ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
+        ...getRules(pluginOptions, rewrites, true)
     ];
 
     const slsRoutingRules: ServerlessRoutingRule[] = routingRules.map(({ Redirect, Condition }) => ({
