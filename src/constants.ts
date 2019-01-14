@@ -31,6 +31,7 @@ export interface PluginOptions {
     params?: Params,
 
     // Define bucket ACL, defaults to 'public-read'
+    // If you don't want to use an ACL, set this to null
     acl?: null | BucketCannedACL;
 
     // Enable gatsby recommended caching settings
