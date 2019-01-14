@@ -201,10 +201,10 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         await Promise.all(promises);
 
         if (config.removeNonexistentObjects) {
-            let objectsToRemove = objects.map(obj => ({Key: <string>obj.Key})).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+            const objectsToRemove = objects.map(obj => ({Key: <string>obj.Key})).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
 
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
-                let objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
+                const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
 
                 spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`
                 await s3.deleteObjects({
