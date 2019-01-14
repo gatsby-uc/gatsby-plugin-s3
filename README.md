@@ -77,13 +77,14 @@ Default configuration is as follows:
     mergeCachingParams: true,
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
-    generateMatchPathRewrites: true
+    generateMatchPathRewrites: true,
+    removeNonexistentObjects: true
 };
 ```
 
 Read the full spec with explanation of each field here:  
 
-https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L49
+https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L53
 
 ## Recipes
 
