@@ -120,7 +120,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         if (!exists) {
             let params: S3.Types.CreateBucketRequest = {
                 Bucket: config.bucketName,
-                ACL: config.acl || 'public-read'
+                ACL: config.acl === null ? undefined : (config.acl || 'public-read')
             };
             if (config.region) {
                 params['CreateBucketConfiguration'] = {
@@ -183,7 +183,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
                     Bucket: config.bucketName,
                     ContentType: mime.getType(key) || 'application/octet-stream',
                     ContentMD5: createHash('md5').update(buffer).digest('base64'),
-                    ACL: config.acl || 'public-read',
+                    ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                     ...getParams(key, params)
                 }).promise();
                 promises.push(promise);
