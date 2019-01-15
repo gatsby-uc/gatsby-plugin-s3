@@ -46,6 +46,10 @@ export interface PluginOptions {
     
     // Generate rewrites for client only paths
     generateMatchPathRewrites?: boolean
+
+    // Remove S3 objects if they no longer exist locally
+    removeNonexistentObjects?: boolean
+    
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -55,7 +59,8 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     mergeCachingParams: true,
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
-    generateMatchPathRewrites: true
+    generateMatchPathRewrites: true,
+    removeNonexistentObjects: true
 };
 
 export const CACHING_PARAMS: Params = {
