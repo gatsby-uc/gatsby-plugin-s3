@@ -87,7 +87,7 @@ Default configuration is as follows:
 
 Read the full spec with explanation of each field here:  
 
-https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L55
+https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L60
 
 ## Recipes
 
