@@ -37,7 +37,8 @@ export interface PluginOptions {
     params?: Params,
 
     // Define bucket ACL, defaults to 'public-read'
-    acl?: BucketCannedACL;
+    // If you don't want to use an ACL, set this to null
+    acl?: null | BucketCannedACL;
 
     // Enable gatsby recommended caching settings
     mergeCachingParams?: boolean,
@@ -52,6 +53,10 @@ export interface PluginOptions {
     
     // Generate rewrites for client only paths
     generateMatchPathRewrites?: boolean
+
+    // Remove S3 objects if they no longer exist locally
+    removeNonexistentObjects?: boolean
+    
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -61,7 +66,8 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     mergeCachingParams: true,
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
-    generateMatchPathRewrites: true
+    generateMatchPathRewrites: true,
+    removeNonexistentObjects: true
 };
 
 export const CACHING_PARAMS: Params = {

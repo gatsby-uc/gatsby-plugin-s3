@@ -80,7 +80,8 @@ Default configuration is as follows:
     mergeCachingParams: true,
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
-    generateMatchPathRewrites: true
+    generateMatchPathRewrites: true,
+    removeNonexistentObjects: true
 };
 ```
 

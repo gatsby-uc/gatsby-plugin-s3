@@ -22,6 +22,8 @@ import { createHash } from 'crypto';
 const cli = yargs();
 const pe = new PrettyError();
 
+const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
+
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
     constraint || s3.config.region || config.region
 );
@@ -118,7 +120,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         if (!exists) {
             let params: S3.Types.CreateBucketRequest = {
                 Bucket: config.bucketName,
-                ACL: config.acl || 'public-read'
+                ACL: config.acl === null ? undefined : (config.acl || 'public-read')
             };
             if (config.region) {
                 params['CreateBucketConfiguration'] = {
@@ -155,6 +157,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         const dir = join(process.cwd(), 'public');
         const stream = klaw(dir);
         const promises: Promise<any>[] = [];
+        let isKeyInUse: { [objectKey: string]: boolean } = {};
 
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
@@ -165,6 +168,8 @@ const deploy = async ({ yes }: { yes: boolean }) => {
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
+
+            isKeyInUse[key] = true;
             
             if (object) {
                 // object with exact hash already exists, abort.
@@ -178,7 +183,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
                     Bucket: config.bucketName,
                     ContentType: mime.getType(key) || 'application/octet-stream',
                     ContentMD5: createHash('md5').update(buffer).digest('base64'),
-                    ACL: config.acl || 'public-read',
+                    ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                     ...getParams(key, params)
                 }).promise();
                 promises.push(promise);
@@ -194,6 +199,24 @@ const deploy = async ({ yes }: { yes: boolean }) => {
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
         await Promise.all(promises);
+
+        if (config.removeNonexistentObjects) {
+            const objectsToRemove = objects.map(obj => ({Key: <string>obj.Key})).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+
+            for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
+                const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
+
+                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`
+                await s3.deleteObjects({
+                    Bucket: config.bucketName,
+                    Delete: {
+                        Objects: objectsToRemoveInThisRequest,
+                        Quiet: true
+                    }
+                }).promise();
+            }
+        }
+
         spinner.succeed('Synced.');
 
         console.log(chalk`
