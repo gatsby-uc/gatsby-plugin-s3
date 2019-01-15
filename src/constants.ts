@@ -20,6 +20,12 @@ export interface PluginOptions {
     // If not specified: will default to whatever the AWS SDK decides is the default otherwise
     // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-environment-variable
     region?: string,
+
+    // The protocol & hostname of your site
+    // If you are using a CDN or reverse-proxy (such as CloudFront) in front of S3 then you must fill out these fields to ensure redirects work correctly
+    // If you are just using your S3 website directly, this is unnecessary
+    protocol?: "http" | "https",
+    hostname?: string,
     
     // Custom params to apply to your files
     // see all available params here: 

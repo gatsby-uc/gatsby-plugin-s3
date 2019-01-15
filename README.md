@@ -73,6 +73,9 @@ Default configuration is as follows:
 ```typescript
 {
     bucketName: '',
+    region: undefined,
+    protocol: undefined,
+    hostname: undefined,
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
@@ -84,7 +87,7 @@ Default configuration is as follows:
 
 Read the full spec with explanation of each field here:  
 
-https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L53
+https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L55
 
 ## Recipes
 
