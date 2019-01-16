@@ -40,7 +40,7 @@ You can make dotenv run before the deploy script does by telling `npx` to requir
 ```diff
 "scripts": {
 - "deploy": "gatsby-plugin-s3 deploy",
-+ "deploy": "npx -n "-r dotenv/config" gatsby-plugin-s3 deploy",
++ "deploy": "npx -n \"-r dotenv/config\" gatsby-plugin-s3 deploy",
 }
 ```
 
