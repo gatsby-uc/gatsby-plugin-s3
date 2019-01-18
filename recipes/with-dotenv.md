@@ -20,7 +20,7 @@ AWS_SECRET_ACCESS_KEY=xxxx
 S3_BUCKET_NAME=my-bucket-name
 ```
 ```js
-// gatsby-node.js
+// gatsby-config.js
 plugins: [
   {
       resolve: `gatsby-plugin-s3`,
