@@ -14,8 +14,14 @@ interface ServerlessRoutingRule {
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
-    routes.map(route => ({
-        ...(route.fromPath.endsWith('*')
+    routes.map(route => {
+        const alwaysTheSame = {
+            HttpRedirectCode: route.isPermanent ? '301' : '302',
+            Protocol: pluginOptions.protocol,
+            HostName: pluginOptions.hostname,
+        };
+
+        return route.fromPath.endsWith('*')
             ? {
                 Condition: {
                     // doing route.toPath.substring here is sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
@@ -24,23 +30,22 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
                     KeyPrefixEquals: withoutLeadingSlash(route.fromPath.substring(0, route.fromPath.length - 1))
                 },
                 Redirect: {
-                    ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath))
+                    ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath)),
+                    ...alwaysTheSame
                 }
             }
             : {
+
                 Condition: {
                     KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
                     HttpErrorCodeReturnedEquals: '404'
                 },
                 Redirect: {
-                    ReplaceKeyWith: withoutLeadingSlash(route.toPath)
+                    ReplaceKeyWith: withoutLeadingSlash(route.toPath),
+                    ...alwaysTheSame
                 }
-            }
-        ),
-        HttpRedirectCode: route.isPermanent ? '301' : '302',
-        Protocol: pluginOptions.protocol,
-        HostName: pluginOptions.hostname,
-    }))
+            };
+    })
 );
 
 let params: Params = {};
