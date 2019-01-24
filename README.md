@@ -106,18 +106,21 @@ Learn how to override the content type gatsby-plugin-s3 sets on your files.
 
 - [See the recipe](recipes/custom-content-type.md) 
 
+
+### Using CloudFront with gatsby-plugin-s3
+
+CloudFront is a global CDN and can be used to make your blazing fast Gatsby site load even faster, particularly for first-time visitors. Additionally, CloudFront provides the easiest way to give your S3 bucket a custom domain name and HTTPS support.  
+
+- [See the recipe](recipes/with-cloudfront.md) 
+
 ### Using serverless with gatsby-plugin-s3
 
 [Serverless](https://serverless.com) can be used in combination with gatsby-plugin-s3, swapping the plugin's deployment step for `sls deploy` instead.  
-Serverless will give you the added advantage of being able to add lambda functions, a cloudfront CDN in front of your bucket and other functionality, all in the same repo, deployment step and CloudFormation stack while still being able to profit from all the optimisations gatsby-plugin-s3 does.
+Serverless will give you the added advantage of being able to add multiple AWS services such as Lambda, CloudFront, and more all in the same repo, deployment step and CloudFormation stack while still being able to profit from all the optimisations gatsby-plugin-s3 does.
 
 - [See the recipe](recipes/with-serverless.md)  
 Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
 - [See the `with-serverless` example](examples/with-serverless)  
-Advanced example that will show you how to set up a fully featured serverless stack with:  
-    - S3.
-    - CloudFront in front of S3. (optional)
-    - Lambda serverless functions.
 
 ## Design choices made
 My rationalizations for the choices I made regarding this plugin, mostly eying at what's being recommended on the gatsby website.
