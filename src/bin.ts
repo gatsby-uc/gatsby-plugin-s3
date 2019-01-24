@@ -227,6 +227,7 @@ const deploy = async ({ yes }: { yes: boolean }) => {
     catch (ex) {
         spinner.fail('Failed.');
         console.error(pe.render(ex));
+        process.exit(1);
     }
 };
 
