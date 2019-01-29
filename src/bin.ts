@@ -259,9 +259,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         console.log(chalk`
         {bold Your website is online at:}
-        {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
-        `); 
-              
+        {blue.underline http://${config.bucketName}.s3-website.${region || 'us-east-1'}.amazonaws.com}
+`);
     }
     catch (ex) {
         spinner.fail('Failed.');
