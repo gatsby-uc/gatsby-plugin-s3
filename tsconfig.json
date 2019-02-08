@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "outDir": ".",
     "module": "esnext",
     "target": "es5",
     "downlevelIteration": true,

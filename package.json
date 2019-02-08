@@ -7,9 +7,8 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "prepublish": "npm run build",
-        "build": "npm run typecheck && babel --extensions=\".ts\" --out-dir=. src/",
-        "typecheck": "tsc --project . --noEmit",
-        "develop": "npm run build -- -w"
+        "build": "tsc --project .",
+        "develop": "babel --extensions=\".ts\" --out-dir=. src/ -w"
     },
     "repository": {
         "type": "git",
