@@ -1,34 +1,38 @@
 {
-  "compilerOptions": {
-    "outDir": ".",
-    "module": "esnext",
-    "target": "es5",
-    "downlevelIteration": true,
-    "lib": ["es6", "dom", "esnext.asynciterable"],
-    "sourceMap": true,
-    "allowJs": true,
-    "jsx": "react",
-    "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "suppressImplicitAnyIndexErrors": false,
-    "noUnusedLocals": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true
-  },
-  "exclude": [
-    "node_modules",
-    "build",
-    "scripts",
-    "acceptance-tests",
-    "webpack",
-    "jest",
-    "src/setupTests.ts",
-    "public",
-    "examples"
-  ]
+    "compilerOptions": {
+        "outDir": ".",
+        "module": "esnext",
+        "target": "es5",
+        "downlevelIteration": true,
+        "lib": [
+            "es6",
+            "dom",
+            "esnext.asynciterable"
+        ],
+        "sourceMap": true,
+        "allowJs": false,
+        "jsx": "react",
+        "moduleResolution": "node",
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "suppressImplicitAnyIndexErrors": false,
+        "noUnusedLocals": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "resolveJsonModule": true
+    },
+    "exclude": [
+        "node_modules",
+        "build",
+        "scripts",
+        "acceptance-tests",
+        "webpack",
+        "jest",
+        "src/setupTests.ts",
+        "public",
+        "examples"
+    ]
 }
