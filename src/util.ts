@@ -1,2 +1,2 @@
 export const withoutLeadingSlash = (string: string) => string.startsWith('/') ? string.substring(1) : string;
-export const withTrailingSlash = (string: string) => !string.endsWith('/') ? string : (string + '/');
+export const withTrailingSlash = (string: string) => string.endsWith('/') ? string : (string + '/');
