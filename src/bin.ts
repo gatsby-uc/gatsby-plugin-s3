@@ -79,13 +79,18 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
     return list;
 }
 
-const deploy = async ({ yes }: { yes: boolean }) => {
+const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
 
     try {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
+
+        // Override the bucket name if it is set via command line
+        if (bucket) {
+          config.bucketName = bucket
+        }
 
         const s3 = new S3({
             region: config.region
@@ -233,13 +238,17 @@ const deploy = async ({ yes }: { yes: boolean }) => {
 
 cli
     .command(
-        'deploy',
+        ['deploy', '$0'],
         'Deploy bucket. If it doesn\'t exist, it will be created. Otherwise, it will be updated.',
         (args: Argv) => (
             args.option('yes', {
                 alias: 'y',
                 describe: 'Skip confirmation prompt',
                 boolean: true
+            }),
+            args.option('bucket', {
+              alias: 'b',
+              describe: 'Bucket name (if you wish to override default bucket name)'
             })
         ),
         deploy
