@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "outDir": ".",
-        "module": "esnext",
+        "module": "commonjs",
         "target": "es5",
         "downlevelIteration": true,
         "lib": [
