@@ -67,15 +67,15 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
         Bucket: bucketName,
         ContinuationToken: token
     }).promise();
-    
+
     if (response.Contents) {
         list.push(...response.Contents);
     }
-    
+
     if (response.NextContinuationToken) {
         list.push(...await listAllObjects(s3, bucketName, response.NextContinuationToken));
     }
-    
+
     return list;
 }
 
@@ -146,11 +146,11 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 }
             }
         };
-        
+
         if (routingRules.length) {
             websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
         }
-        
+
         await s3.putBucketWebsite(websiteConfig).promise();
 
         spinner.text = 'Listing objects...';
@@ -175,22 +175,23 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
             isKeyInUse[key] = true;
-            
+
             if (object) {
                 // object with exact hash already exists, abort.
                 return;
             }
-            
+
             try {
-                const promise = s3.upload({
-                    Key: key,
-                    Body: fs.createReadStream(path),
-                    Bucket: config.bucketName,
-                    ContentType: mime.getType(key) || 'application/octet-stream',
-                    ContentMD5: createHash('md5').update(buffer).digest('base64'),
-                    ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                    ...getParams(key, params)
-                }).promise();
+              const promise = new S3.ManagedUpload({
+                params: {
+                  Bucket: config.bucketName,
+                  Key: key,
+                  Body: fs.createReadStream(path),
+                  ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                  ContentType: mime.getType(key) || 'application/octet-stream',
+                  ...getParams(key, params)
+                }
+              }).promise();
                 promises.push(promise);
                 await promise;
                 spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
@@ -200,7 +201,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 process.exit(1);
             }
         });
-        
+
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
         await Promise.all(promises);
