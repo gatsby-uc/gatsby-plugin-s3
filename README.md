@@ -93,7 +93,7 @@ https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L60
 
 Several recipes are available:
 
-### Using a different bucket name per environment
+### Adding environment specific settings
 
 Learn how to retrieve AWS credentials from a .env file.
 Additionally setup a different bucket name depending on your environment.
