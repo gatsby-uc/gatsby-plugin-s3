@@ -15,7 +15,11 @@ interface ServerlessRoutingRule {
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
     routes.map(route => {
-        const alwaysTheSame = {
+        const alwaysTheSameInCondition = {
+            HttpErrorCodeReturnedEquals: '404'
+        }
+
+        const alwaysTheSameInRedirect = {
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
@@ -28,21 +32,22 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
                     // the syntax that gatsby invented here does not work with routing rules.
                     // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
                     KeyPrefixEquals: withoutLeadingSlash(route.fromPath.substring(0, route.fromPath.length - 1))
+                    ...alwaysTheSameInCondition
                 },
                 Redirect: {
                     ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath)),
-                    ...alwaysTheSame
+                    ...alwaysTheSameInRedirect
                 }
             }
             : {
 
                 Condition: {
                     KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-                    HttpErrorCodeReturnedEquals: '404'
+                    ...alwaysTheSameInCondition
                 },
                 Redirect: {
                     ReplaceKeyWith: withoutLeadingSlash(route.toPath),
-                    ...alwaysTheSame
+                    ...alwaysTheSameInRedirect
                 }
             };
     })
