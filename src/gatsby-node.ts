@@ -2,7 +2,7 @@ import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './consta
 import fs from 'fs';
 import path from 'path';
 import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
-import { withoutLeadingSlash, withTrailingSlash } from './util';
+import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
@@ -14,44 +14,20 @@ interface ServerlessRoutingRule {
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
-    routes.map(route => {
-        const alwaysTheSameInCondition = {
+    routes.map(route => ({
+        Condition: {
+            KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
             HttpErrorCodeReturnedEquals: '404'
-        }
-
-        const alwaysTheSameInRedirect = {
+        },
+        Redirect: {
+            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
-        };
-
-        return route.fromPath.endsWith('*')
-            ? {
-                Condition: {
-                    // doing route.toPath.substring here is sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
-                    // the syntax that gatsby invented here does not work with routing rules.
-                    // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
-                    KeyPrefixEquals: withoutLeadingSlash(route.fromPath.substring(0, route.fromPath.length - 1)),
-                    ...alwaysTheSameInCondition
-                },
-                Redirect: {
-                    ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath)),
-                    ...alwaysTheSameInRedirect
-                }
-            }
-            : {
-
-                Condition: {
-                    KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-                    ...alwaysTheSameInCondition
-                },
-                Redirect: {
-                    ReplaceKeyWith: withoutLeadingSlash(route.toPath),
-                    ...alwaysTheSameInRedirect
-                }
-            };
+        }
     })
-);
+    )
+)
 
 let params: Params = {};
 
@@ -103,12 +79,16 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     if (pluginOptions.generateMatchPathRewrites) {
         rewrites = Array.from(pages.values())
             .filter((page): page is Required<GatsbyPage> => !!page.matchPath && page.matchPath !== page.path)
-            .map(page => {
-                return {
-                    fromPath: page.matchPath,
-                    toPath: page.path,
-                }
-            })
+            .map(page => ({
+                // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
+                // the syntax that gatsby invented here does not work with routing rules.
+                // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
+                fromPath:
+                    page.matchPath.endsWith('*')
+                        ? page.matchPath.substring(0, page.matchPath.length - 1)
+                        : page.matchPath,
+                toPath: page.path
+            }));
     }
 
     if (pluginOptions.mergeCachingParams) {
