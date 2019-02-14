@@ -31,7 +31,7 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
                     // doing route.toPath.substring here is sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
                     // the syntax that gatsby invented here does not work with routing rules.
                     // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
-                    KeyPrefixEquals: withoutLeadingSlash(route.fromPath.substring(0, route.fromPath.length - 1))
+                    KeyPrefixEquals: withoutLeadingSlash(route.fromPath.substring(0, route.fromPath.length - 1)),
                     ...alwaysTheSameInCondition
                 },
                 Redirect: {
