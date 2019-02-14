@@ -11,7 +11,8 @@ console.debug(chalk`{blue.bold INFO} using {bold ${TESTING_ENDPOINT}} as endpoin
 
 it('redirects from the index root', async () => {
     const response = await fetch(TESTING_ENDPOINT, { redirect: 'manual' });
-    expect(response.status).toBe(301);
+    expect(response.status).toBeGreaterThanOrEqual(301);
+    expect(response.status).toBeLessThanOrEqual(302);
     expect(response.headers.has('location')).toBe(true);
     const followedRedirect = await fetch(response.headers.get('location')!);
     expect(followedRedirect.status).toBe(200);
