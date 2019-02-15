@@ -1,5 +1,7 @@
 # gatsby-plugin-s3
 
+[![Build Status](https://travis-ci.org/jariz/gatsby-plugin-s3.svg?branch=master)](https://travis-ci.org/jariz/gatsby-plugin-s3)
+
 ![](https://jari.lol/KCB4gNo4Xg.gif)  
 
 Enables you to deploy your gatsby site to a S3 bucket.  
