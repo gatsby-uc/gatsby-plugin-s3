@@ -2,7 +2,7 @@ import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './consta
 import fs from 'fs';
 import path from 'path';
 import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
-import { withoutLeadingSlash, withTrailingSlash } from './util';
+import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
@@ -13,26 +13,21 @@ interface ServerlessRoutingRule {
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
-const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[], rewriting = false): RoutingRules => (
+const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
     routes.map(route => ({
         Condition: {
             KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-            ...(rewriting ? {
-                HttpErrorCodeReturnedEquals: '404'
-            } : {})
+            HttpErrorCodeReturnedEquals: '404'
         },
         Redirect: {
-            ...(!rewriting ? {
-                ReplaceKeyPrefixWith: withTrailingSlash(withoutLeadingSlash(route.toPath))
-            } : {
-                ReplaceKeyWith: withoutLeadingSlash(route.toPath)
-            }),
+            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
         }
-    }))
-);
+    })
+    )
+)
 
 let params: Params = {};
 
@@ -110,7 +105,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
 
     const routingRules = [
         ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
-        ...getRules(pluginOptions, rewrites, true)
+        ...getRules(pluginOptions, rewrites)
     ];
 
     const slsRoutingRules: ServerlessRoutingRule[] = routingRules.map(({ Redirect, Condition }) => ({

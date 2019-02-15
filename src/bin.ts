@@ -54,6 +54,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     for (const key of Object.keys(params)) {
         if (minimatch(path, key)) {
             returned = {
+                ...returned,
                 ...params[key]
             };
         }
