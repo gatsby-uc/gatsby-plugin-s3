@@ -189,6 +189,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
             try {
                 const promise = new S3.ManagedUpload({
+                    service: s3,
                     params: {
                         Bucket: config.bucketName,
                         Key: key,
