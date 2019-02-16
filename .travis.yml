@@ -2,7 +2,9 @@ language: node_js
 node_js:
   - "node"
 before_script:
+  - npm link
   - cd examples/with-redirects
   - npm ci
+  - npm link gatsby-plugin-s3
   - npm run build && npm run deploy -- -y
   - cd ../..
