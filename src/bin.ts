@@ -11,7 +11,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { join, relative } from 'path';
+import { join, posix } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -99,7 +99,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
-        
+
         if (isCI && !yes) {
             yes = true;
         }
@@ -175,7 +175,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = relative(dir, path);
+            const key = posix.relative(dir, path);
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
