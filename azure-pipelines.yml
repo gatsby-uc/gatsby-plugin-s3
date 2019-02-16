@@ -21,13 +21,15 @@ steps:
     npm run build
     npm run deploy -- -y
     cd ../..
-    npm ci
-    npm run build
-    npm test
   displayName: 'deploy with-redirects project'
+  env:
+    AWS_ACCESS_KEY_ID: $(awsKeyID)
+    AWS_SECRET_ACCESS_KEY: $(awsSecret)
   
 - script: |
     npm ci
     npm run build
     npm test
   displayName: 'run tests'
+  env:
+    TESTING_ENDPOINT: http://gatsby-plugin-s3-dev.s3-website-eu-west-1.amazonaws.com
