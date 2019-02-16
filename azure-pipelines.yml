@@ -24,4 +24,10 @@ steps:
     npm ci
     npm run build
     npm test
-  displayName: 'npm install and build'
+  displayName: 'deploy with-redirects project'
+  
+- script: |
+    npm ci
+    npm run build
+    npm test
+  displayName: 'run tests'
