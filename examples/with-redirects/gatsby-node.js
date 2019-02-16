@@ -1,5 +1,3 @@
-const path = require('path');
-
 exports.createPages = ({ actions }) => {
     // create some test redirects
     actions.createRedirect({

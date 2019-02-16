@@ -15,6 +15,7 @@ module.exports = {
         {
             resolve: `gatsby-plugin-create-client-paths`,
             options: { prefixes: [`/client-only/*`] },
-        }
+        },
+        'gatsby-plugin-offline'
     ]
 };

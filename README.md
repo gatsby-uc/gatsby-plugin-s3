@@ -43,6 +43,12 @@ Add a deployment script to your `package.json`
 }
 ```
 
+Optionally you can skip the confirmation prompt automatically by adding `--yes` like so:  
+```
+    "deploy": "gatsby-plugin-s3 deploy --yes"
+```
+When `gatsby-plugin-s3` detects a [CI](https://en.wikipedia.org/wiki/Continuous_integration) environment, it will automatically skip this prompt by default.
+
 After configuring credentials (see below), you can now execute `npm run build && npm run deploy` to have your site be build and immediately deployed to S3.
 
 ## Credentials

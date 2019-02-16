@@ -18,6 +18,7 @@ import mime from 'mime';
 import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
+import isCI from 'is-ci';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -78,7 +79,7 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
     }
 
     return list;
-}
+};
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
@@ -90,7 +91,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         // Override the bucket name if it is set via command line
         if (bucket) {
-          config.bucketName = bucket
+            config.bucketName = bucket;
         }
 
         const s3 = new S3({
@@ -98,6 +99,10 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
+        
+        if (isCI && !yes) {
+            yes = true;
+        }
 
         if (!yes) {
             spinner.stop();
@@ -183,16 +188,16 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }
 
             try {
-              const promise = new S3.ManagedUpload({
-                params: {
-                  Bucket: config.bucketName,
-                  Key: key,
-                  Body: fs.createReadStream(path),
-                  ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                  ContentType: mime.getType(key) || 'application/octet-stream',
-                  ...getParams(key, params)
-                }
-              }).promise();
+                const promise = new S3.ManagedUpload({
+                    params: {
+                        Bucket: config.bucketName,
+                        Key: key,
+                        Body: fs.createReadStream(path),
+                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                        ContentType: mime.getType(key) || 'application/octet-stream',
+                        ...getParams(key, params)
+                    }
+                }).promise();
                 promises.push(promise);
                 await promise;
                 spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
@@ -208,12 +213,12 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         await Promise.all(promises);
 
         if (config.removeNonexistentObjects) {
-            const objectsToRemove = objects.map(obj => ({Key: <string>obj.Key})).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+            const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
 
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
                 const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
 
-                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`
+                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
                 await s3.deleteObjects({
                     Bucket: config.bucketName,
                     Delete: {
@@ -242,17 +247,17 @@ cli
     .command(
         ['deploy', '$0'],
         'Deploy bucket. If it doesn\'t exist, it will be created. Otherwise, it will be updated.',
-        (args: Argv) => (
+        (args: Argv) => {
             args.option('yes', {
                 alias: 'y',
                 describe: 'Skip confirmation prompt',
                 boolean: true
-            }),
+            });
             args.option('bucket', {
-              alias: 'b',
-              describe: 'Bucket name (if you wish to override default bucket name)'
-            })
-        ),
+                alias: 'b',
+                describe: 'Bucket name (if you wish to override default bucket name)'
+            });
+        },
         deploy
     )
     .wrap(cli.terminalWidth())
