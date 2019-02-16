@@ -46,7 +46,7 @@ Add a deployment script to your `package.json`
 ```
 
 Optionally you can skip the confirmation prompt automatically by adding `--yes` like so:  
-```
+```js
     "deploy": "gatsby-plugin-s3 deploy --yes"
 ```
 When `gatsby-plugin-s3` detects a [CI](https://en.wikipedia.org/wiki/Continuous_integration) environment, it will automatically skip this prompt by default.
