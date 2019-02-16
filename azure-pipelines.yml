@@ -23,8 +23,9 @@ steps:
   env:
     AWS_ACCESS_KEY_ID: $(awsKeyID)
     AWS_SECRET_ACCESS_KEY: $(awsSecret)
+    AWS_STAGE: dev-azure
   
 - script: npm test
   displayName: 'Run tests'
   env:
-    TESTING_ENDPOINT: http://gatsby-plugin-s3-dev.s3-website-eu-west-1.amazonaws.com
+    TESTING_ENDPOINT: http://gatsby-plugin-s3-dev-azure.s3-website-eu-west-1.amazonaws.com

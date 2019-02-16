@@ -8,7 +8,7 @@ module.exports = {
         {
             resolve: `gatsby-plugin-s3`,
             options: {
-                bucketName: 'gatsby-plugin-s3-dev',
+                bucketName: 'gatsby-plugin-s3-' + process.env.AWS_STAGE,
                 region: 'eu-west-1'
             },
         },
