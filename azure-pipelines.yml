@@ -15,7 +15,7 @@ steps:
     versionSpec: '8.x'
   displayName: 'Install Node.js'
 
-- script: |
+- bash: |
     cd examples/with-redirects
     npm ci
     npm run build
@@ -26,7 +26,7 @@ steps:
     AWS_ACCESS_KEY_ID: $(awsKeyID)
     AWS_SECRET_ACCESS_KEY: $(awsSecret)
   
-- script: |
+- bash: |
     npm ci
     npm run build
     npm test
