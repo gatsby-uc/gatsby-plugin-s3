@@ -15,10 +15,10 @@ steps:
     versionSpec: '8.x'
   displayName: 'Install Node.js'
 
-- script: npm ci
-  displayName: 'Install deps'
+- script: npm link
+  displayName: 'Link'
 
-- script: cd examples\with-redirects && npm ci && npm run build && npm run deploy -- -y && cd ..\..
+- script: cd examples\with-redirects && npm ci && npm link gatsby-plugin-s3 && npm run build && npm run deploy -- -y && cd ..\..
   displayName: 'Deploy "with-redirects" project'
   env:
     AWS_ACCESS_KEY_ID: $(awsKeyID)
