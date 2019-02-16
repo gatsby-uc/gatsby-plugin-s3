@@ -15,23 +15,16 @@ steps:
     versionSpec: '8.x'
   displayName: 'Install Node.js'
 
-- script: |
-    npm ci
+- script: npm ci
   displayName: 'Install deps'
 
-- script: |
-    npm ci
-    cd examples\with-redirects
-    npm ci
-    npm run build && npm run deploy -- -y
-    cd ..\..
+- script: cd examples\with-redirects && npm ci && npm run build && npm run deploy -- -y && cd ..\..
   displayName: 'Deploy "with-redirects" project'
   env:
     AWS_ACCESS_KEY_ID: $(awsKeyID)
     AWS_SECRET_ACCESS_KEY: $(awsSecret)
   
-- bash: |
-    npm test
+- script: npm test
   displayName: 'Run tests'
   env:
     TESTING_ENDPOINT: http://gatsby-plugin-s3-dev.s3-website-eu-west-1.amazonaws.com
