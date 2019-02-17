@@ -1,7 +1,5 @@
 # gatsby-plugin-s3
 
-[![Build Status](https://travis-ci.org/jariz/gatsby-plugin-s3.svg?branch=master)](https://travis-ci.org/jariz/gatsby-plugin-s3)
-
 ![](https://jari.lol/KCB4gNo4Xg.gif)  
 
 Enables you to deploy your gatsby site to a S3 bucket.  
@@ -16,6 +14,13 @@ Requires very little configuration, while optimizing your site as much as possib
 - 💾 Optimizes caching for you.
 - ☁️ Optional serverless framework support if you want to take things a step further.
 - ✏️ Add your own params to uploaded S3 objects (if you wish).
+
+## Build status: (for master)
+
+| Platform | Build status                                                                                                                                                                                    |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Unix     | [![Build Status](https://travis-ci.org/jariz/gatsby-plugin-s3.svg?branch=master)](https://travis-ci.org/jariz/gatsby-plugin-s3)                                                                 |
+| Windows  | [![Build Status](https://dev.azure.com/jarizw/jarizw/_apis/build/status/windows%20tests?branchName=master)](https://dev.azure.com/jarizw/jarizw/_build/latest?definitionId=1&branchName=master) |
 
 ## Usage
 
