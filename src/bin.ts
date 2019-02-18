@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import '@babel/polyfill';
+import 'fs-posix';
 import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs, { Argv } from 'yargs';
 import { CACHE_FILES, Params, PluginOptions } from './constants';
@@ -11,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { join, posix } from 'path';
+import { posix } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -20,6 +21,7 @@ import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
 
+const { relative } = posix;
 const cli = yargs();
 const pe = new PrettyError();
 
@@ -165,8 +167,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
-        const dir = join(process.cwd(), 'public');
-        const stream = klaw(dir);
+        const stream = klaw('public');
         const promises: Promise<any>[] = [];
         let isKeyInUse: { [objectKey: string]: boolean } = {};
 
@@ -175,7 +176,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = posix.relative(dir, path);
+            const key = relative('.', path);
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
