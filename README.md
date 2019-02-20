@@ -1,6 +1,8 @@
 # gatsby-plugin-s3
 
-![](https://img.shields.io/npm/v/gatsby-plugin-s3.svg?style=flat) ![](https://img.shields.io/travis/jariz/gatsby-plugin-s3.svg?label=unix&style=flat&logo=travis) ![](https://img.shields.io/azure-devops/build/jarizw/jarizw/1.svg?label=windows&style=flat&logo=azuredevops) 
+[![](https://img.shields.io/npm/v/gatsby-plugin-s3.svg?style=flat)](https://npmjs.com/package/gatsby-plugin-s3)
+[![](https://img.shields.io/travis/jariz/gatsby-plugin-s3.svg?label=unix&style=flat&logo=travis)](https://travis-ci.org/jariz/gatsby-plugin-s3)
+[![](https://img.shields.io/azure-devops/build/jarizw/jarizw/1.svg?label=windows&style=flat&logo=azuredevops)](https://dev.azure.com/jarizw/jarizw/_build?definitionId=1)
 
 ![](https://jari.lol/KCB4gNo4Xg.gif)  
 
