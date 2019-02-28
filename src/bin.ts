@@ -59,7 +59,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
             };
         }
     }
-    console.log(returned);
+    
     return returned;
 };
 
@@ -185,7 +185,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
             isKeyInUse[key] = true;
-            console.log(key);
+            
             if (object) {
                 // object with exact hash already exists, abort.
                 return;
