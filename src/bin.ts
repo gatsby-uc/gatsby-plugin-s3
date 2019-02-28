@@ -11,7 +11,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { join, relative } from 'path';
+import { join, relative, sep } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -59,6 +59,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
             };
         }
     }
+    console.log(returned);
     return returned;
 };
 
@@ -79,6 +80,14 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
 
     return list;
 }
+
+const createSafeS3Key = (key: string): string => {
+    if (sep === '\\') {
+        return key.replace(/\\/g, '/');
+    }
+
+    return key;
+};
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
@@ -170,13 +179,13 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = relative(dir, path);
+            const key = createSafeS3Key(relative(dir, path));
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
             isKeyInUse[key] = true;
-
+            console.log(key);
             if (object) {
                 // object with exact hash already exists, abort.
                 return;
@@ -189,7 +198,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                   Key: key,
                   Body: fs.createReadStream(path),
                   ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                  ContentType: mime.getType(key) || 'application/octet-stream',
+                  ContentType: mime.getType(path) || 'application/octet-stream',
                   ...getParams(key, params)
                 }
               }).promise();
