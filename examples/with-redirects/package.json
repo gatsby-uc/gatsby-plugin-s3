@@ -20,7 +20,7 @@
         "develop": "gatsby develop",
         "start": "npm run develop",
         "format": "prettier --write \"src/**/*.js\"",
-        "deploy": "node plugins/gatsby-plugin-s3/bin.js deploy",
+        "deploy": "node ../../bin.js deploy",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
