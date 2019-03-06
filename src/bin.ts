@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { posix } from 'path';
+import { relative, sep } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -21,7 +21,6 @@ import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
 
-const { relative } = posix;
 const cli = yargs();
 const pe = new PrettyError();
 
@@ -62,6 +61,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
             };
         }
     }
+    
     return returned;
 };
 
@@ -81,6 +81,14 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
     }
 
     return list;
+};
+
+const createSafeS3Key = (key: string): string => {
+    if (sep === '\\') {
+        return key.replace(/\\/g, '/');
+    }
+
+    return key;
 };
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
@@ -176,13 +184,13 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = relative('.', path);
+            const key = createSafeS3Key(relative('.', path));
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
             isKeyInUse[key] = true;
-
+            
             if (object) {
                 // object with exact hash already exists, abort.
                 return;
@@ -196,7 +204,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                         Key: key,
                         Body: fs.createReadStream(path),
                         ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                        ContentType: mime.getType(key) || 'application/octet-stream',
+                        ContentType: mime.getType(path) || 'application/octet-stream',
                         ...getParams(key, params)
                     }
                 }).promise();
