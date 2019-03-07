@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, sep } from 'path';
+import { relative, sep, win32, posix } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -84,8 +84,8 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
 };
 
 const createSafeS3Key = (key: string): string => {
-    if (sep === '\\') {
-        return key.replace(/\\/g, '/');
+    if (sep === win32.sep) {
+        return key.replace(RegExp(`/${win32.sep}/g`), posix.sep);
     }
 
     return key;
