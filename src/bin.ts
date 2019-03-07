@@ -20,6 +20,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import escapeRegExp from 'lodash.escaperegexp';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -85,7 +86,7 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
 
 const createSafeS3Key = (key: string): string => {
     if (sep === win32.sep) {
-        return key.replace(RegExp(`/${win32.sep}/g`), posix.sep);
+        return key.replace(RegExp(`/${escapeRegExp(sep)}/g`), posix.sep);
     }
 
     return key;
