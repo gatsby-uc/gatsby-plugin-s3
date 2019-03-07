@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, sep, win32, posix } from 'path';
+import { relative, sep, win32, posix, resolve } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -175,7 +175,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
-        const stream = klaw('public');
+        const publicDir = resolve('./public');
+        const stream = klaw(publicDir);
         const promises: Promise<any>[] = [];
         let isKeyInUse: { [objectKey: string]: boolean } = {};
 
@@ -184,7 +185,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = createSafeS3Key(relative('.', path));
+            const key = createSafeS3Key(relative(publicDir, path));
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
