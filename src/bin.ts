@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, sep, win32, posix, resolve } from 'path';
+import { relative, resolve, sep } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -20,7 +20,6 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import escapeRegExp from 'lodash.escaperegexp';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -62,7 +61,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
             };
         }
     }
-    
+
     return returned;
 };
 
@@ -85,8 +84,8 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
 };
 
 const createSafeS3Key = (key: string): string => {
-    if (sep === win32.sep) {
-        return key.replace(RegExp(`/${escapeRegExp(sep)}/g`), posix.sep);
+    if (sep === '\\') {
+        return key.replace(/\\/g, '/');
     }
 
     return key;
@@ -192,7 +191,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
             isKeyInUse[key] = true;
-            
+
             if (object) {
                 // object with exact hash already exists, abort.
                 return;
