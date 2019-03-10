@@ -74,6 +74,10 @@
     "jest": {
         "roots": [
             "<rootDir>"
+        ],
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/.cache/"
         ]
     }
 }
