@@ -13,7 +13,7 @@ if (!TESTING_ENDPOINT) {
 
 console.debug(chalk`{blue.bold INFO} using {bold ${TESTING_ENDPOINT}} as endpoint to test against.`);
 
-const PUBLIC_DIR = path.join(__dirname, '..', 'examples', 'with-redirects', 'public');
+const PUBLIC_DIR = path.join(__dirname, 'examples', 'with-redirects', 'public');
 
 describe('applies caching and content type headers', () => {
     for (const pattern of Object.keys(CACHING_PARAMS)) {
