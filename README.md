@@ -63,7 +63,7 @@ A couple of different methods of specifying credentials exist, the easiest one b
 
 ```bash
 # NOTE: ensure python is installed
-pip install aws
+pip install awscli
 aws configure
 ```
 
