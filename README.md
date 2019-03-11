@@ -21,25 +21,36 @@ Requires very little configuration, while optimizing your site as much as possib
 
 ## Usage
 
-Install the plugin:
+### Installation
+
 ```bash
 npm i gatsby-plugin-s3
 ```
 
-Add it to your `gatsby-config.js` & configure the bucket name (required)
+### Configuration
+
+Add the plugin to your `gatsby-config.js` & configure the bucket name and ACL (required):
+
 ```js
 plugins: [
   {
       resolve: `gatsby-plugin-s3`,
       options: {
-          bucketName: 'my-website-bucket'
+          bucketName: 'my-website-bucket',
+          ACL: 'public-read'
       },
   },
 ]
 ```
-_There are more fields that can be configured, see below._
 
-Add a deployment script to your `package.json`
+Optionally, set the ACL to `null` if you wish to keep your bucket private (which is the default).  
+Note that your site will not be viewable by anyone but you if you do so.  
+Read [here](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl) about all available ACL's.
+
+### Deployment
+
+Add a deployment script to your `package.json`:
+
 ```json
 "scripts": {
     ...
@@ -54,27 +65,6 @@ Optionally you can skip the confirmation prompt automatically by adding `--yes` 
 When `gatsby-plugin-s3` detects a [CI](https://en.wikipedia.org/wiki/Continuous_integration) environment, it will automatically skip this prompt by default.
 
 After configuring credentials (see below), you can now execute `npm run build && npm run deploy` to have your site be build and immediately deployed to S3.
-
-## Credentials
-
-### Globally
-
-A couple of different methods of specifying credentials exist, the easiest one being using the AWS CLI:
-
-```bash
-# NOTE: ensure python is installed
-pip install awscli
-aws configure
-```
-
-### Environment variables
-If you don't want to have your credentials saved globally (i.e. you're dealing with multiple tokens on the same environment), [they can be set as environment variables](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/loading-node-credentials-environment.html), for example:
-
-```bash
-AWS_ACCESS_KEY_ID=xxxx AWS_SECRET_ACCESS_KEY=xxxx npm run deploy
-```
-
-Additionally, these can be set in a local `.env` file too, but this requires a bit more setup work. [See the recipe here](recipes/with-dotenv.md).
 
 ## Configuration
 Most of the aspects of the plugin can be configured.  

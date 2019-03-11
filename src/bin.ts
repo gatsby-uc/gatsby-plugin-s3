@@ -110,6 +110,16 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         const { exists, region } = await getBucketInfo(config, s3);
 
+        // deprecated config checks...
+        if (typeof config.acl === 'undefined') {
+            spinner.stop();
+            console.log(chalk`{blue.bold NOTICE}: As of {cyan gatsby-plugin-s3} 1.0 the {dim public-read} ACL is no longer applied by default.
+You will need to specify {dim acl: 'public-read'} in the {cyan gatsby-plugin-s3} config if you wish to have this behavior.
+To hide this message, explicitly set {dim acl: null} in the {cyan gatsby-plugin-s3} config.`);
+            config.acl = null;
+            spinner.start();
+        }
+
         if (isCI && !yes) {
             yes = true;
         }
@@ -141,7 +151,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         if (!exists) {
             let params: S3.Types.CreateBucketRequest = {
                 Bucket: config.bucketName,
-                ACL: config.acl === null ? undefined : (config.acl || 'public-read')
+                ACL: config.acl === null ? undefined : config.acl
             };
             if (config.region) {
                 params['CreateBucketConfiguration'] = {
@@ -204,7 +214,6 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                         Bucket: config.bucketName,
                         Key: key,
                         Body: fs.createReadStream(path),
-                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                         ContentType: mime.getType(path) || 'application/octet-stream',
                         ...getParams(key, params)
                     }
