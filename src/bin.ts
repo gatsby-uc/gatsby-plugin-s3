@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, resolve, sep } from 'path';
+import { join, relative, resolve, sep } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -20,6 +20,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import { withoutLeadingSlash } from './util';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -65,11 +66,12 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Promise<ObjectList> => {
+const listAllObjects = async (s3: S3, bucketName: string, prefix?: string, token?: NextToken): Promise<ObjectList> => {
     const list: ObjectList = [];
     const response = await s3.listObjectsV2({
         Bucket: bucketName,
-        ContinuationToken: token
+        ContinuationToken: token,
+        Prefix: prefix && withoutLeadingSlash(prefix)
     }).promise();
 
     if (response.Contents) {
@@ -77,7 +79,7 @@ const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Pr
     }
 
     if (response.NextContinuationToken) {
-        list.push(...await listAllObjects(s3, bucketName, response.NextContinuationToken));
+        list.push(...await listAllObjects(s3, bucketName, prefix, response.NextContinuationToken));
     }
 
     return list;
@@ -171,7 +173,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
-        const objects = await listAllObjects(s3, config.bucketName);
+        const objects = await listAllObjects(s3, config.bucketName, config.pathPrefix);
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
@@ -185,7 +187,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
 
-            const key = createSafeS3Key(relative(publicDir, path));
+            const prefix = config.pathPrefix ? withoutLeadingSlash(config.pathPrefix) : '.';
+            const key = createSafeS3Key(join(prefix, relative(publicDir, path)));
             const buffer = await readFile(path);
             const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);

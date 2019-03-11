@@ -15,19 +15,19 @@ interface ServerlessRoutingRule {
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
     routes.map(route => ({
-        Condition: {
-            KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-            HttpErrorCodeReturnedEquals: '404'
-        },
-        Redirect: {
-            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
-            HttpRedirectCode: route.isPermanent ? '301' : '302',
-            Protocol: pluginOptions.protocol,
-            HostName: pluginOptions.hostname,
-        }
-    })
+            Condition: {
+                KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
+                HttpErrorCodeReturnedEquals: '404'
+            },
+                Redirect: {
+                ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
+                HttpRedirectCode: route.isPermanent ? '301' : '302',
+                Protocol: pluginOptions.protocol,
+                HostName: pluginOptions.hostname
+            }
+        })
     )
-)
+);
 
 let params: Params = {};
 
@@ -71,17 +71,36 @@ export const createPagesStatefully = ({ store, actions: { createPage } }: any, u
     }
 };
 
-export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) => {
+export const onPostBuild = ({ store, graphql }: any, userPluginOptions: PluginOptions) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
-    const { redirects, pages, program }: GatsbyState = store.getState();
+
+    if (!pluginOptions.pathPrefix) {
+        graphql(`
+            query {
+              site {
+                pathPrefix
+              }
+            }
+        `)
+            .then(({ data: { site } }: { data: { site?: { pathPrefix?: string; } }}) => {
+                if (site && typeof site.pathPrefix === 'string') {
+                    pluginOptions.pathPrefix = site.pathPrefix;
+                }
+                writePluginData(store, pluginOptions);
+            });
+    } else {
+        writePluginData(store, pluginOptions);
+    }
+};
+
+const writePluginData = (store: { getState: () => GatsbyState }, pluginOptions: PluginOptions) => {
+    const { redirects, pages, program } = store.getState();
 
     let rewrites: GatsbyRedirect[] = [];
     if (pluginOptions.generateMatchPathRewrites) {
         rewrites = Array.from(pages.values())
             .filter((page): page is Required<GatsbyPage> => !!page.matchPath && page.matchPath !== page.path)
             .map(page => ({
-                // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
-                // the syntax that gatsby invented here does not work with routing rules.
                 // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
                 fromPath:
                     page.matchPath.endsWith('*')
@@ -89,6 +108,15 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
                         : page.matchPath,
                 toPath: page.path
             }));
+        
+        // prepend prefix to rewrites if it's set
+        if (pluginOptions.pathPrefix) {
+            rewrites = rewrites.map(({ fromPath, toPath, ...rest }): GatsbyRedirect => ({
+                fromPath: pluginOptions.pathPrefix + fromPath,
+                toPath: pluginOptions.pathPrefix + toPath,
+                ...rest
+            }))
+        }
     }
 
     if (pluginOptions.mergeCachingParams) {

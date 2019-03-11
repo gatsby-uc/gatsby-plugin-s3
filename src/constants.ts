@@ -16,6 +16,10 @@ export interface PluginOptions {
     // Your bucket name (required)
     bucketName: string,
     
+    // Additionally, prefix that the site must be hosted on.
+    // Defaults to site config `pathPrefix' value (and it's recommended that you use that instead).
+    pathPrefix?: string;
+    
     // Your region
     // If not specified: will default to whatever the AWS SDK decides is the default otherwise
     // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-environment-variable
