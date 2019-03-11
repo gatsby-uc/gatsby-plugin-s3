@@ -37,7 +37,7 @@ plugins: [
       resolve: `gatsby-plugin-s3`,
       options: {
           bucketName: 'my-website-bucket',
-          ACL: 'public-read'
+          acl: 'public-read'
       },
   },
 ]
