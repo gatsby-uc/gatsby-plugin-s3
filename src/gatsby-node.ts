@@ -19,7 +19,7 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
                 KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
                 HttpErrorCodeReturnedEquals: '404'
             },
-                Redirect: {
+            Redirect: {
                 ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
                 HttpRedirectCode: route.isPermanent ? '301' : '302',
                 Protocol: pluginOptions.protocol,
@@ -82,7 +82,7 @@ export const onPostBuild = ({ store, graphql }: any, userPluginOptions: PluginOp
               }
             }
         `)
-            .then(({ data: { site } }: { data: { site?: { pathPrefix?: string; } }}) => {
+            .then(({ data: { site } }: { data: { site?: { pathPrefix?: string; } } }) => {
                 if (site && typeof site.pathPrefix === 'string') {
                     pluginOptions.pathPrefix = site.pathPrefix;
                 }
@@ -108,14 +108,14 @@ const writePluginData = (store: { getState: () => GatsbyState }, pluginOptions: 
                         : page.matchPath,
                 toPath: page.path
             }));
-        
+
         // prepend prefix to rewrites if it's set
         if (pluginOptions.pathPrefix) {
             rewrites = rewrites.map(({ fromPath, toPath, ...rest }): GatsbyRedirect => ({
                 fromPath: pluginOptions.pathPrefix + fromPath,
                 toPath: pluginOptions.pathPrefix + toPath,
                 ...rest
-            }))
+            }));
         }
     }
 
@@ -135,6 +135,18 @@ const writePluginData = (store: { getState: () => GatsbyState }, pluginOptions: 
         ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
         ...getRules(pluginOptions, rewrites)
     ];
+
+    // sort routing rules by key prefix (descending order)
+    routingRules.sort(({ Condition: aCondition }, { Condition: bCondition }) => {
+        if (aCondition!.KeyPrefixEquals! > bCondition!.KeyPrefixEquals!) {
+            return -1;
+        }
+        else if (aCondition!.KeyPrefixEquals! < bCondition!.KeyPrefixEquals!) {
+            return 1;
+        }
+
+        return 0;
+    });
 
     const slsRoutingRules: ServerlessRoutingRule[] = routingRules.map(({ Redirect, Condition }) => ({
         RoutingRuleCondition: Condition,
