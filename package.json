@@ -1,6 +1,6 @@
 {
-    "name": "gatsby-plugin-yandex-s3-test",
-    "version": "0.0.21",
+    "name": "gatsby-plugin-s3",
+    "version": "0.2.6",
     "description": "Enables you to deploy your gatsby site to a S3 bucket.",
     "main": "bin.js",
     "bin": "bin.js",
@@ -12,7 +12,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/sniper304/gatsby-plugin-s3.git"
+        "url": "git+https://github.com/jariz/gatsby-plugin-s3.git"
     },
     "keywords": [
         "gatsby",

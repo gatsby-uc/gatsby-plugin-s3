@@ -91,7 +91,8 @@ Default configuration is as follows:
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
-    removeNonexistentObjects: true
+    removeNonexistentObjects: true,
+    customAwsEndpointHostname: undefined
 };
 ```
 
@@ -131,3 +132,22 @@ Serverless will give you the added advantage of being able to add multiple AWS s
 - [See the recipe](recipes/with-serverless.md)  
 Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
 - [See the `with-serverless` example](examples/with-serverless)  
+
+
+### Using Yandex S3 with gatsby-plugin-s3
+To use Yandex S3 you need only to change region & customAwsEndpointHostname params before deploy
+```typescript
+{
+    bucketName: 'YOUR_BUCKET_NAME',
+    region: 'us-east-1',
+    protocol: undefined,
+    hostname: undefined,
+    params: {},
+    mergeCachingParams: true,
+    generateRoutingRules: true,
+    generateIndexPageForRedirect: true,
+    generateMatchPathRewrites: true,
+    removeNonexistentObjects: true,
+    customAwsEndpointHostname: 'storage.yandexcloud.net'
+};
+```
