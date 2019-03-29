@@ -58,7 +58,7 @@ export interface PluginOptions {
     removeNonexistentObjects?: boolean,
     
     // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
-    customAwsEndpointHostname?: null | string
+    customAwsEndpointHostname?: string
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {

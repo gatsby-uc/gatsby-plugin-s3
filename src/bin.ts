@@ -107,7 +107,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         const s3 = new S3({
             region: config.region,
-            endpoint: config.customAwsEndpointHostname === null ? AWS_DEFAULT_HOSTNAME : (config.customAwsEndpointHostname || AWS_DEFAULT_HOSTNAME)
+            endpoint: config.customAwsEndpointHostname || AWS_DEFAULT_HOSTNAME
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
