@@ -25,7 +25,6 @@ const cli = yargs();
 const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
-const AWS_DEFAULT_HOSTNAME = 'amazonaws.com';
 
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
     constraint || s3.config.region || config.region
@@ -107,7 +106,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         const s3 = new S3({
             region: config.region,
-            endpoint: config.customAwsEndpointHostname || AWS_DEFAULT_HOSTNAME
+            endpoint: config.customAwsEndpointHostname
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
