@@ -29,7 +29,8 @@ interface UploadTask {
     isKeyInUse: { [objectKey: string]: boolean }, 
     path: string, 
     config: PluginOptions, 
-    params: Params
+    params: Params,
+    spinner: ora.Ora
 }
 
 const cli = yargs();
@@ -102,65 +103,53 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const uploadQueue = queue((task: UploadTask, callback: (key: string, tag: string, err?: any) => void) => {
-    const {s3, publicDir, objects, isKeyInUse, path, config, params} = task;
-
-    console.time("Start upload task");
-
-    console.time("Create key");
-
+const uploadQueue = queue((task: UploadTask, callback: (key: string, err?: any) => void) => {
+    const {s3, publicDir, objects, isKeyInUse, path, config, params, spinner} = task;
     const key = createSafeS3Key(relative(publicDir, path));
-
-    console.timeEnd("Create key");
-    console.time("Open read stream");
-
     const stream = fs.createReadStream(path);
-
-    console.timeEnd("Open read stream");
-    console.time("Pipe stream to hash");
-
     const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
-    const finishedHash = streamToPromise(hashStream);
 
-    console.timeEnd("Pipe stream to hash");
+    streamToPromise(hashStream)
+        .then((data) => {
+            const tag = `"${data}"`;
+            const object = objects.find(object => object.Key === key && object.ETag === tag);
 
-    const tag = `"${finishedHash}"`;
-
-    console.time("Find matching object");
-
-    const object = objects.find(object => object.Key === key && object.ETag === tag);
-
-    console.timeEnd("Find matching object");
-
-    isKeyInUse[key] = true;
-
-    if (object) {
-        // object with exact hash already exists, abort.
-        console.log('existing hash, abort');
-        console.timeEnd("Start upload task");
-        callback(key, tag);
-    }
-    try {
-        console.time("Upload");
-        new S3.ManagedUpload({
-            service: s3,
-            params: {
-                Bucket: config.bucketName,
-                Key: key,
-                Body: stream,
-                ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                ContentType: mime.getType(path) || 'application/octet-stream',
-                ...getParams(key, params)
+            isKeyInUse[key] = true;
+        
+            if (object) {
+                // object with exact hash already exists, abort.
+                callback(key);
+                return;
             }
-        }).promise();
-        console.timeEnd("Upload");
-        console.timeEnd("Start upload task");
-        callback(key, tag);
-    } catch (ex) {
-        console.timeEnd("Start upload task");
-        callback(key, tag, ex);
-    }
-}, 1);
+
+            try {
+                const upload = new S3.ManagedUpload({
+                    service: s3,
+                    params: {
+                        Bucket: config.bucketName,
+                        Key: key,
+                        Body: fs.createReadStream(path),
+                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                        ContentType: mime.getType(path) || 'application/octet-stream',
+                        ...getParams(key, params)
+                    }
+                })
+
+                upload.on('httpUploadProgress', (evt) => {
+                    spinner.text = chalk`Syncing...\n{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`
+                })
+
+                upload.promise()
+                    .then((data) => {
+                        callback(data.Key);
+                    });
+
+            } catch (ex) {
+                callback(key, ex);
+            }
+        })
+
+}, 20);
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
@@ -251,24 +240,16 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const stream = klaw(publicDir);
         let isKeyInUse: { [objectKey: string]: boolean } = {};
 
-        uploadQueue.empty = function () {
-            console.log('empty');
-        }
-
-        uploadQueue.drain = function () {
-            console.log('done');
-        }
-
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
             }
             const task = {s3, publicDir, objects, isKeyInUse, path, config, params, spinner};
-            uploadQueue.push(task, (key: string, tag: string, err?: any) => {
+            uploadQueue.push(task, (key: string, err?: any) => {
                 if (!err) {
-                    spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}} with tag {cyan ${tag}}}`
+                    spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`
                 } else {
-                    spinner.fail(chalk`Upload failure for file {cyan ${path}}`);
+                    spinner.fail(chalk`Upload failure for file {cyan ${key}}`);
                     console.error(pe.render(err));
                     process.exit(1);
                 }
@@ -277,33 +258,32 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
-        await uploadQueue.drain()
-
-        console.log(isKeyInUse)
-
-        if (config.removeNonexistentObjects) {
-            const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
-
-            for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
-                const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
-
-                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
-                await s3.deleteObjects({
-                    Bucket: config.bucketName,
-                    Delete: {
-                        Objects: objectsToRemoveInThisRequest,
-                        Quiet: true
-                    }
-                }).promise();
+        
+        uploadQueue.drain = async () => {
+            if (config.removeNonexistentObjects) {
+                const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+    
+                for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
+                    const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
+    
+                    spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
+                    await s3.deleteObjects({
+                        Bucket: config.bucketName,
+                        Delete: {
+                            Objects: objectsToRemoveInThisRequest,
+                            Quiet: true
+                        }
+                    }).promise();
+                }
             }
+    
+            spinner.succeed('Synced.');
+    
+            console.log(chalk`
+            {bold Your website is online at:}
+            {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
+            `); 
         }
-
-        spinner.succeed('Synced.');
-
-        console.log(chalk`
-        {bold Your website is online at:}
-        {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
-`);
     }
     catch (ex) {
         spinner.fail('Failed.');
