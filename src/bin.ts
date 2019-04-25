@@ -5,7 +5,7 @@ import 'fs-posix';
 import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs, { Argv } from 'yargs';
 import { CACHE_FILES, Params, PluginOptions } from './constants';
-import { readFile, readJson } from 'fs-extra';
+import { readJson } from 'fs-extra';
 import klaw from 'klaw';
 import PrettyError from 'pretty-error';
 import streamToPromise from 'stream-to-promise';
@@ -20,6 +20,17 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import queue from 'async/queue';
+
+interface UploadTask {
+    s3: S3, 
+    publicDir: string, 
+    objects: ObjectList, 
+    isKeyInUse: { [objectKey: string]: boolean }, 
+    path: string, 
+    config: PluginOptions, 
+    params: Params
+}
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -90,6 +101,66 @@ const createSafeS3Key = (key: string): string => {
 
     return key;
 };
+
+const uploadQueue = queue((task: UploadTask, callback: (key: string, tag: string, err?: any) => void) => {
+    const {s3, publicDir, objects, isKeyInUse, path, config, params} = task;
+
+    console.time("Start upload task");
+
+    console.time("Create key");
+
+    const key = createSafeS3Key(relative(publicDir, path));
+
+    console.timeEnd("Create key");
+    console.time("Open read stream");
+
+    const stream = fs.createReadStream(path);
+
+    console.timeEnd("Open read stream");
+    console.time("Pipe stream to hash");
+
+    const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
+    const finishedHash = streamToPromise(hashStream);
+
+    console.timeEnd("Pipe stream to hash");
+
+    const tag = `"${finishedHash}"`;
+
+    console.time("Find matching object");
+
+    const object = objects.find(object => object.Key === key && object.ETag === tag);
+
+    console.timeEnd("Find matching object");
+
+    isKeyInUse[key] = true;
+
+    if (object) {
+        // object with exact hash already exists, abort.
+        console.log('existing hash, abort');
+        console.timeEnd("Start upload task");
+        callback(key, tag);
+    }
+    try {
+        console.time("Upload");
+        new S3.ManagedUpload({
+            service: s3,
+            params: {
+                Bucket: config.bucketName,
+                Key: key,
+                Body: stream,
+                ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                ContentType: mime.getType(path) || 'application/octet-stream',
+                ...getParams(key, params)
+            }
+        }).promise();
+        console.timeEnd("Upload");
+        console.timeEnd("Start upload task");
+        callback(key, tag);
+    } catch (ex) {
+        console.timeEnd("Start upload task");
+        callback(key, tag, ex);
+    }
+}, 1);
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
@@ -178,51 +249,37 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         spinner.text = 'Syncing...';
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
-        const promises: Promise<any>[] = [];
         let isKeyInUse: { [objectKey: string]: boolean } = {};
+
+        uploadQueue.empty = function () {
+            console.log('empty');
+        }
+
+        uploadQueue.drain = function () {
+            console.log('done');
+        }
 
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
             }
-
-            const key = createSafeS3Key(relative(publicDir, path));
-            const buffer = await readFile(path);
-            const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
-            const object = objects.find(object => object.Key === key && object.ETag === tag);
-
-            isKeyInUse[key] = true;
-
-            if (object) {
-                // object with exact hash already exists, abort.
-                return;
-            }
-
-            try {
-                const promise = new S3.ManagedUpload({
-                    service: s3,
-                    params: {
-                        Bucket: config.bucketName,
-                        Key: key,
-                        Body: fs.createReadStream(path),
-                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                        ContentType: mime.getType(path) || 'application/octet-stream',
-                        ...getParams(key, params)
-                    }
-                }).promise();
-                promises.push(promise);
-                await promise;
-                spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-            } catch (ex) {
-                spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
-                console.error(pe.render(ex));
-                process.exit(1);
-            }
+            const task = {s3, publicDir, objects, isKeyInUse, path, config, params, spinner};
+            uploadQueue.push(task, (key: string, tag: string, err?: any) => {
+                if (!err) {
+                    spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}} with tag {cyan ${tag}}}`
+                } else {
+                    spinner.fail(chalk`Upload failure for file {cyan ${path}}`);
+                    console.error(pe.render(err));
+                    process.exit(1);
+                }
+            });
         });
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
-        await Promise.all(promises);
+        await uploadQueue.drain()
+
+        console.log(isKeyInUse)
 
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
