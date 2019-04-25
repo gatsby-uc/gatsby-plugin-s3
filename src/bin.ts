@@ -151,7 +151,7 @@ const uploadQueue = queue((task: UploadTask, callback: (key: string, err?: any) 
             }
         })
 
-}, 20);
+}, 5);
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
