@@ -142,6 +142,8 @@ const uploadQueue = queue((task: UploadTask, callback: (key: string, err?: any) 
                 upload.promise()
                     .then((data) => {
                         callback(data.Key);
+                    }, (err) => {
+                        callback(key, err);
                     });
 
             } catch (ex) {
