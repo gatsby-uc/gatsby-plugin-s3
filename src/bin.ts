@@ -103,7 +103,7 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const uploadQueue = queue((task: UploadTask, callback: (key: string, err?: any) => void) => {
+const uploadQueue = queue((task: UploadTask, callback: (key?: string, err?: any) => void) => {
     const {s3, publicDir, objects, isKeyInUse, path, config, params, spinner} = task;
     const key = createSafeS3Key(relative(publicDir, path));
     const stream = fs.createReadStream(path);
@@ -118,7 +118,7 @@ const uploadQueue = queue((task: UploadTask, callback: (key: string, err?: any) 
         
             if (object) {
                 // object with exact hash already exists, abort.
-                callback(key);
+                callback();
                 return;
             }
 
@@ -247,11 +247,11 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
             const task = {s3, publicDir, objects, isKeyInUse, path, config, params, spinner};
-            uploadQueue.push(task, (key: string, err?: any) => {
+            uploadQueue.push(task, (key?: string, err?: any) => {
                 if (!err) {
-                    spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`
+                    if (key) spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`
                 } else {
-                    spinner.fail(chalk`Upload failure for file {cyan ${key}}`);
+                    if (key) spinner.fail(chalk`Upload failure for file {cyan ${key}}`);
                     console.error(pe.render(err));
                     process.exit(1);
                 }
