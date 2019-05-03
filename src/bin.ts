@@ -65,20 +65,22 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string, token?: NextToken): Promise<ObjectList> => {
+const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> => {
     const list: ObjectList = [];
-    const response = await s3.listObjectsV2({
-        Bucket: bucketName,
-        ContinuationToken: token
-    }).promise();
+    
+    let token: NextToken | undefined;
+    do {
+        const response = await s3.listObjectsV2({
+            Bucket: bucketName,
+            ContinuationToken: token
+        }).promise();
 
-    if (response.Contents) {
-        list.push(...response.Contents);
-    }
+        if (response.Contents) {
+            list.push(...response.Contents);
+        }
 
-    if (response.NextContinuationToken) {
-        list.push(...await listAllObjects(s3, bucketName, response.NextContinuationToken));
-    }
+        token = response.NextContinuationToken;
+    } while(token);
 
     return list;
 };
