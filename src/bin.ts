@@ -34,8 +34,8 @@ const guessRegion = (s3: S3, constraint: void | string | undefined) => (
 const getBucketInfo = async (config: PluginOptions, s3: S3): Promise<{ exists: boolean, region?: string }> => {
     try {
         const { $response } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
+        
         const detectedRegion = guessRegion(s3, ($response.data && $response.data.LocationConstraint));
-
         return {
             exists: true,
             region: detectedRegion
@@ -107,7 +107,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         }
 
         const s3 = new S3({
-            region: config.region
+            region: config.region,
+            endpoint: config.customAwsEndpointHostname
         });
 
         const { exists, region } = await getBucketInfo(config, s3);

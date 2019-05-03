@@ -56,11 +56,13 @@ export interface PluginOptions {
     generateIndexPageForRedirect?: boolean,
     
     // Generate rewrites for client only paths
-    generateMatchPathRewrites?: boolean
+    generateMatchPathRewrites?: boolean,
 
     // Remove S3 objects if they no longer exist locally
-    removeNonexistentObjects?: boolean
+    removeNonexistentObjects?: boolean,
     
+    // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
+    customAwsEndpointHostname?: string
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -71,7 +73,7 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateRoutingRules: true,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
-    removeNonexistentObjects: true
+    removeNonexistentObjects: true,
 };
 
 export const CACHING_PARAMS: Params = {

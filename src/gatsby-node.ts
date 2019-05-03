@@ -131,27 +131,34 @@ const writePluginData = (store: { getState: () => GatsbyState }, pluginOptions: 
         ...pluginOptions.params
     };
 
-    const routingRules = [
-        ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
-        ...getRules(pluginOptions, rewrites)
-    ];
+    let routingRules: RoutingRule[] = [];
+    let slsRoutingRules: ServerlessRoutingRule[] = [];
 
-    // sort routing rules by key prefix (descending order)
-    routingRules.sort(({ Condition: aCondition }, { Condition: bCondition }) => {
-        if (aCondition!.KeyPrefixEquals! > bCondition!.KeyPrefixEquals!) {
-            return -1;
-        }
-        else if (aCondition!.KeyPrefixEquals! < bCondition!.KeyPrefixEquals!) {
-            return 1;
-        }
+    if (pluginOptions.generateRoutingRules) {
+        
+        
+        routingRules = [
+            ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
+            ...getRules(pluginOptions, rewrites)
+        ];
 
-        return 0;
-    });
+        // sort routing rules by key prefix (descending order)
+        routingRules.sort(({ Condition: aCondition }, { Condition: bCondition }) => {
+            if (aCondition!.KeyPrefixEquals! > bCondition!.KeyPrefixEquals!) {
+                return -1;
+            }
+            else if (aCondition!.KeyPrefixEquals! < bCondition!.KeyPrefixEquals!) {
+                return 1;
+            }
 
-    const slsRoutingRules: ServerlessRoutingRule[] = routingRules.map(({ Redirect, Condition }) => ({
-        RoutingRuleCondition: Condition,
-        RedirectRule: Redirect
-    }));
+            return 0;
+        });
+        
+        slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
+            RoutingRuleCondition: Condition,
+            RedirectRule: Redirect
+        }));
+    }
 
     fs.writeFileSync(
         path.join(program.directory, './.cache/s3.routingRules.json'),
