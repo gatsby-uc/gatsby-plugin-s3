@@ -6,6 +6,7 @@ export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
     params: path.join('.cache', 's3.params.json'),
     routingRules: path.join('.cache', 's3.routingRules.json'),
+    permanentRedirects: path.join('.cache', 's3.permanentRedirects.json')
 };
 
 export type Params = {

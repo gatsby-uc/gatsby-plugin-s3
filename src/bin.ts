@@ -20,6 +20,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -98,6 +99,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
+        const permanentRedirects: GatsbyRedirect[] = await readJson(CACHE_FILES.permanentRedirects)
 
         // Override the bucket name if it is set via command line
         if (bucket) {
@@ -219,6 +221,48 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 process.exit(1);
             }
         });
+
+        fs.appendFileSync('tmp/deploy.log', `redirect count: ${permanentRedirects.length}\n`)
+        promises.push(...permanentRedirects.map(async redirect => {
+            const { fromPath, toPath } = redirect
+            fs.appendFileSync('tmp/deploy.log', `redirect ${fromPath} => ${toPath}\n`)
+
+            const key = withoutLeadingSlash(fromPath)
+            const redirectLocation = '/' + withoutTrailingSlash(withoutLeadingSlash(toPath))
+            const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
+            const object = objects.find(object => object.Key === key && object.ETag === tag);
+
+            isKeyInUse[key] = true;
+
+            if (object) {
+                // object with exact hash already exists, abort.
+                return;
+            }
+
+            try {
+                fs.appendFileSync('tmp/deploy.log', `create managed upload for ${key} => ${redirectLocation}\n`)
+                const promise = new S3.ManagedUpload({
+                    service: s3,
+                    params: {
+                        Bucket: config.bucketName,
+                        Key: key,
+                        Body: toPath,
+                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                        ContentType: 'application/octet-stream',
+                        WebsiteRedirectLocation: redirectLocation,
+                        ...getParams(key, params)
+                    }
+                }).promise();
+                promises.push(promise);
+                await promise;
+                fs.appendFileSync('tmp/deploy.log', `uploaded ${key} => ${redirectLocation}`)
+                spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
+            } catch (ex) {
+                spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
+                console.error(pe.render(ex));
+                process.exit(1);
+            }
+        }))
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is

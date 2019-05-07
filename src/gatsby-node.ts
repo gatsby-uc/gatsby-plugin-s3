@@ -106,11 +106,19 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     let routingRules: RoutingRule[] = [];
     let slsRoutingRules: ServerlessRoutingRule[] = [];
 
+    const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
+        .filter(redirect => !redirect.isPermanent)
+    const permanentRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
+        .filter(redirect => redirect.isPermanent)
+
     if (pluginOptions.generateRoutingRules) {
         routingRules = [
-            ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
+            ...getRules(pluginOptions, temporaryRedirects),
             ...getRules(pluginOptions, rewrites)
         ];
+        if (routingRules.length > 50) {
+            throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.`)
+        }
         
         slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
             RoutingRuleCondition: Condition,
@@ -127,6 +135,11 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         path.join(program.directory, './.cache/s3.sls.routingRules.json'),
         JSON.stringify(slsRoutingRules)
     );
+
+    fs.writeFileSync(
+        path.join(program.directory, './.cache/s3.permanentRedirects.json'),
+        JSON.stringify(permanentRedirects)
+    )
 
     fs.writeFileSync(
         path.join(program.directory, './.cache/s3.params.json'),
