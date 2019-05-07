@@ -222,10 +222,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }
         });
 
-        fs.appendFileSync('tmp/deploy.log', `redirect count: ${permanentRedirects.length}\n`)
         promises.push(...permanentRedirects.map(async redirect => {
             const { fromPath, toPath } = redirect
-            fs.appendFileSync('tmp/deploy.log', `redirect ${fromPath} => ${toPath}\n`)
 
             const key = withoutLeadingSlash(fromPath)
             const redirectLocation = '/' + withoutTrailingSlash(withoutLeadingSlash(toPath))
@@ -240,7 +238,6 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }
 
             try {
-                fs.appendFileSync('tmp/deploy.log', `create managed upload for ${key} => ${redirectLocation}\n`)
                 const promise = new S3.ManagedUpload({
                     service: s3,
                     params: {
@@ -255,7 +252,6 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 }).promise();
                 promises.push(promise);
                 await promise;
-                fs.appendFileSync('tmp/deploy.log', `uploaded ${key} => ${redirectLocation}`)
                 spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
             } catch (ex) {
                 spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
