@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { resolve } from 'url';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
@@ -108,8 +109,6 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
 
     const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => !redirect.isPermanent)
-    const permanentRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => redirect.isPermanent)
 
     if (pluginOptions.generateRoutingRules) {
         routingRules = [
@@ -124,6 +123,21 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
             RoutingRuleCondition: Condition,
             RedirectRule: Redirect
         }));
+    }
+
+    let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
+        .filter(redirect => redirect.isPermanent)
+
+    if (pluginOptions.hostname && pluginOptions.protocol) {
+        const base = `${pluginOptions.protocol}://${pluginOptions.hostname}`
+        permanentRedirects = permanentRedirects.map((redirect) => {
+            return {
+                ...redirect,
+                toPath: resolve(base, redirect.toPath)
+            }
+        })
+    } else if(pluginOptions.hostname || pluginOptions.protocol) {
+        throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`)
     }
 
     fs.writeFileSync(

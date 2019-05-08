@@ -20,7 +20,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { withoutLeadingSlash } from './util';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -223,13 +223,13 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         });
 
         promises.push(...permanentRedirects.map(async redirect => {
-            const { fromPath, toPath } = redirect
+            const { fromPath, toPath: redirectLocation } = redirect
 
             let key = withoutLeadingSlash(fromPath)
             if (/\/$/.test(key)) {
                 key = join(key, 'index.html')
             }
-            const redirectLocation = '/' + withoutTrailingSlash(withoutLeadingSlash(toPath))
+
             const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
 
