@@ -23,11 +23,10 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
-            HostName: pluginOptions.hostname,
+            HostName: pluginOptions.hostname
         }
-    })
-    )
-)
+    }))
+);
 
 let params: Params = {};
 
