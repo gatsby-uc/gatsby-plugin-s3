@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, resolve, sep } from 'path';
+import { relative, resolve, sep, join } from 'path';
 import fs from 'fs';
 import minimatch from 'minimatch';
 import mime from 'mime';
@@ -225,7 +225,10 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         promises.push(...permanentRedirects.map(async redirect => {
             const { fromPath, toPath } = redirect
 
-            const key = withoutLeadingSlash(fromPath)
+            let key = withoutLeadingSlash(fromPath)
+            if (/\/$/.test(key)) {
+                key = join(key, 'index.html')
+            }
             const redirectLocation = '/' + withoutTrailingSlash(withoutLeadingSlash(toPath))
             const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
             const object = objects.find(object => object.Key === key && object.ETag === tag);
