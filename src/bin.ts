@@ -243,7 +243,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                     params: {
                         Bucket: config.bucketName,
                         Key: key,
-                        Body: toPath,
+                        Body: redirectLocation,
                         ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                         ContentType: 'application/octet-stream',
                         WebsiteRedirectLocation: redirectLocation,
