@@ -190,7 +190,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             if (!stats.isFile()) {
                 return;
             }
-            uploadQueue.push(async (callback: any) => {
+            uploadQueue.push(async (callback: () => void) => {
                 const key = createSafeS3Key(relative(publicDir, path));
                 const stream = fs.createReadStream(path);
                 const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
