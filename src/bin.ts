@@ -21,7 +21,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { parallelLimit, asyncify } from 'async';
+import { parallelLimit, asyncify, AsyncFunction } from 'async';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -98,7 +98,7 @@ const createSafeS3Key = (key: string): string => {
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
     
-    const uploadQueue: Array<() => Promise<void>> = [];
+    const uploadQueue:  Array<AsyncFunction<void, Error>> = [];
 
     try {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
@@ -225,6 +225,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         
                     } catch (ex) {
                         console.error(ex);
+                        process.exit(1);
                     }
                 }
 
@@ -234,7 +235,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         // now we play the waiting game.
         const parallelLimitPromise = util.promisify(parallelLimit);
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
-        await parallelLimitPromise(uploadQueue as any, 20);
+        await parallelLimitPromise(uploadQueue as any, 20); // the promisified parallelLimit function expects a dict for some reason?
         
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
