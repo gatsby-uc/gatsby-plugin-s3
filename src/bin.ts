@@ -14,13 +14,14 @@ import chalk from 'chalk';
 import { Readable } from 'stream';
 import { relative, resolve, sep } from 'path';
 import fs from 'fs';
+import util from 'util';
 import minimatch from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { parallelLimit } from 'async';
+import { parallelLimit, asyncify } from 'async';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -97,7 +98,7 @@ const createSafeS3Key = (key: string): string => {
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
     
-    const uploadQueue: any[] = [];
+    const uploadQueue: Array<() => Promise<void>> = [];
 
     try {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
@@ -190,7 +191,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             if (!stats.isFile()) {
                 return;
             }
-            uploadQueue.push(async (callback: () => void) => {
+            uploadQueue.push(asyncify(async () => {
                 const key = createSafeS3Key(relative(publicDir, path));
                 const stream = fs.createReadStream(path);
                 const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
@@ -205,6 +206,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                     try {
                         const upload = new S3.ManagedUpload({
                             service: s3,
+                            partSize: 500 * 1024 * 1024,
                             params: {
                                 Bucket: config.bucketName,
                                 Key: key,
@@ -219,47 +221,45 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                             spinner.text = chalk`Syncing...\n{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`
                         })
         
-                        await upload.promise()
-                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`
+                        await upload.promise();
+                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
         
                     } catch (ex) {
                         console.error(ex);
                     }
                 }
-                callback();
-            });
+
+            }));
         });
 
         // now we play the waiting game.
+        const parallelLimitPromise = util.promisify(parallelLimit);
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
+        await parallelLimitPromise(uploadQueue as any, 20);
+        
+        if (config.removeNonexistentObjects) {
+            const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
 
-        await parallelLimit(uploadQueue, 20, async () => {
+            for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
+                const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
 
-            if (config.removeNonexistentObjects) {
-                const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
-
-                for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
-                    const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
-
-                    spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
-                    await s3.deleteObjects({
-                        Bucket: config.bucketName,
-                        Delete: {
-                            Objects: objectsToRemoveInThisRequest,
-                            Quiet: true
-                        }
-                    }).promise();
-                }
+                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
+                await s3.deleteObjects({
+                    Bucket: config.bucketName,
+                    Delete: {
+                        Objects: objectsToRemoveInThisRequest,
+                        Quiet: true
+                    }
+                }).promise();
             }
+        }
 
-            spinner.succeed('Synced.');
+        spinner.succeed('Synced.');
 
-            console.log(chalk`
-            {bold Your website is online at:}
-            {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
-            `); 
-    
-        })
+        console.log(chalk`
+        {bold Your website is online at:}
+        {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
+        `); 
               
     }
     catch (ex) {

@@ -56,6 +56,7 @@
     "dependencies": {
         "@types/async": "^2.4.1",
         "@types/jest": "^24.0.0",
+        "@types/node": "^12.0.2",
         "async": "^2.6.2",
         "aws-sdk": "^2.382.0",
         "chalk": "^2.4.1",
