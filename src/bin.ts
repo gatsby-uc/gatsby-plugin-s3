@@ -28,6 +28,8 @@ const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
 
+const promisifiedParallelLimit = util.promisify(parallelLimit) as unknown as (tasks: AsyncFunction<void, Error>[], limit: number) => Promise<Array<undefined>>; // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
+
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
     constraint || s3.config.region || config.region
 );
@@ -233,9 +235,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         });
 
         // now we play the waiting game.
-        const parallelLimitPromise = util.promisify(parallelLimit);
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
-        await parallelLimitPromise(uploadQueue as any, 20); // the promisified parallelLimit function expects a dict for some reason?
+        await promisifiedParallelLimit(uploadQueue, 20);
         
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
