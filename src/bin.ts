@@ -28,7 +28,7 @@ const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
 
-const promisifiedParallelLimit = util.promisify(parallelLimit) as unknown as (tasks: AsyncFunction<void, Error>[], limit: number) => Promise<Array<undefined>>; // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
+const promisifiedParallelLimit: <T, E = Error>(tasks: AsyncFunction<T, E>[], limit: number) => Promise<Array<T>> = util.promisify(parallelLimit) as any; // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
 
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
     constraint || s3.config.region || config.region
