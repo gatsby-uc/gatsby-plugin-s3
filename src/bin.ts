@@ -5,7 +5,7 @@ import 'fs-posix';
 import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs, { Argv } from 'yargs';
 import { CACHE_FILES, Params, PluginOptions } from './constants';
-import { readFile, readJson } from 'fs-extra';
+import { readJson } from 'fs-extra';
 import klaw from 'klaw';
 import PrettyError from 'pretty-error';
 import streamToPromise from 'stream-to-promise';
@@ -14,17 +14,21 @@ import chalk from 'chalk';
 import { Readable } from 'stream';
 import { relative, resolve, sep } from 'path';
 import fs from 'fs';
+import util from 'util';
 import minimatch from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import { parallelLimit, asyncify, AsyncFunction } from 'async';
 
 const cli = yargs();
 const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
+
+const promisifiedParallelLimit: <T, E = Error>(tasks: AsyncFunction<T, E>[], limit: number) => Promise<Array<T>> = util.promisify(parallelLimit) as any; // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
 
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
     constraint || s3.config.region || config.region
@@ -95,6 +99,8 @@ const createSafeS3Key = (key: string): string => {
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
+    
+    const uploadQueue:  Array<AsyncFunction<void, Error>> = [];
 
     try {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
@@ -172,6 +178,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         await s3.putBucketWebsite(websiteConfig).promise();
 
+
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
         const objects = await listAllObjects(s3, config.bucketName);
@@ -180,52 +187,57 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         spinner.text = 'Syncing...';
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
-        const promises: Promise<any>[] = [];
         let isKeyInUse: { [objectKey: string]: boolean } = {};
 
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
             }
-
-            const key = createSafeS3Key(relative(publicDir, path));
-            const buffer = await readFile(path);
-            const tag = `"${createHash('md5').update(buffer).digest('hex')}"`;
-            const object = objects.find(object => object.Key === key && object.ETag === tag);
-
-            isKeyInUse[key] = true;
-
-            if (object) {
-                // object with exact hash already exists, abort.
-                return;
-            }
-
-            try {
-                const promise = new S3.ManagedUpload({
-                    service: s3,
-                    params: {
-                        Bucket: config.bucketName,
-                        Key: key,
-                        Body: fs.createReadStream(path),
-                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                        ContentType: mime.getType(path) || 'application/octet-stream',
-                        ...getParams(key, params)
+            uploadQueue.push(asyncify(async () => {
+                const key = createSafeS3Key(relative(publicDir, path));
+                const stream = fs.createReadStream(path);
+                const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
+                const data = await streamToPromise(hashStream)
+    
+                const tag = `"${data}"`;
+                const object = objects.find(object => object.Key === key && object.ETag === tag);
+    
+                isKeyInUse[key] = true;
+            
+                if (!object) {
+                    try {
+                        const upload = new S3.ManagedUpload({
+                            service: s3,
+                            params: {
+                                Bucket: config.bucketName,
+                                Key: key,
+                                Body: fs.createReadStream(path),
+                                ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                                ContentType: mime.getType(path) || 'application/octet-stream',
+                                ...getParams(key, params)
+                            }
+                        })
+        
+                        upload.on('httpUploadProgress', (evt) => {
+                            spinner.text = chalk`Syncing...\n{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`
+                        })
+        
+                        await upload.promise();
+                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+        
+                    } catch (ex) {
+                        console.error(ex);
+                        process.exit(1);
                     }
-                }).promise();
-                promises.push(promise);
-                await promise;
-                spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-            } catch (ex) {
-                spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
-                console.error(pe.render(ex));
-                process.exit(1);
-            }
+                }
+
+            }));
         });
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
-        await Promise.all(promises);
-
+        await promisifiedParallelLimit(uploadQueue, 20);
+        
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
 
@@ -248,7 +260,8 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         console.log(chalk`
         {bold Your website is online at:}
         {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
-`);
+        `); 
+              
     }
     catch (ex) {
         spinner.fail('Failed.');
