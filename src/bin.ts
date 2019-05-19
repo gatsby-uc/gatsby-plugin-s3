@@ -23,6 +23,8 @@ import { createHash } from 'crypto';
 import isCI from 'is-ci';
 import { parallelLimit, asyncify, AsyncFunction } from 'async';
 
+import { getS3WebsiteDomainUrl } from './util';
+
 const cli = yargs();
 const pe = new PrettyError();
 
@@ -257,11 +259,11 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         spinner.succeed('Synced.');
 
+        const s3WebsiteDomain = getS3WebsiteDomainUrl(region || 'us-east-1');
         console.log(chalk`
         {bold Your website is online at:}
-        {blue.underline http://${config.bucketName}.s3-website-${region || 'us-east-1'}.amazonaws.com}
-        `); 
-              
+        {blue.underline http://${config.bucketName}.${s3WebsiteDomain}}
+        `);
     }
     catch (ex) {
         spinner.fail('Failed.');
