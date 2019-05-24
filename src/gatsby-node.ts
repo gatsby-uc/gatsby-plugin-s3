@@ -109,22 +109,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
 
     const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => !redirect.isPermanent)
-
-    if (pluginOptions.generateRoutingRules) {
-        routingRules = [
-            ...getRules(pluginOptions, temporaryRedirects),
-            ...getRules(pluginOptions, rewrites)
-        ];
-        if (routingRules.length > 50) {
-            throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.`)
-        }
-        
-        slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
-            RoutingRuleCondition: Condition,
-            RedirectRule: Redirect
-        }));
-    }
-
+    
     let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => redirect.isPermanent)
 
@@ -138,6 +123,26 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         })
     } else if(pluginOptions.hostname || pluginOptions.protocol) {
         throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`)
+    }
+
+    if (pluginOptions.generateRoutingRules) {
+        routingRules = [
+            ...getRules(pluginOptions, temporaryRedirects),
+            ...getRules(pluginOptions, rewrites)
+        ];
+        if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+            routingRules.push(...getRules(pluginOptions, permanentRedirects))
+            permanentRedirects = []
+        }
+        if (routingRules.length > 50) {
+            throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.\n` +
+                `  Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`)
+        }
+        
+        slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
+            RoutingRuleCondition: Condition,
+            RedirectRule: Redirect
+        }));
     }
 
     fs.writeFileSync(
