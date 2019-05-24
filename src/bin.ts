@@ -238,46 +238,49 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }));
         });
 
-        promises.push(...permanentRedirects.map(async redirect => {
-            const { fromPath, toPath: redirectLocation } = redirect
+        uploadQueue.push(...permanentRedirects.map(redirect =>
+            asyncify(async () => {
+                const { fromPath, toPath: redirectLocation } = redirect
 
-            let key = withoutLeadingSlash(fromPath)
-            if (/\/$/.test(key)) {
-                key = join(key, 'index.html')
-            }
+                let key = withoutLeadingSlash(fromPath)
+                if (/\/$/.test(key)) {
+                    key = join(key, 'index.html')
+                }
 
-            const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
-            const object = objects.find(object => object.Key === key && object.ETag === tag);
+                const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
+                const object = objects.find(object => object.Key === key && object.ETag === tag);
 
-            isKeyInUse[key] = true;
+                isKeyInUse[key] = true;
 
-            if (object) {
-                // object with exact hash already exists, abort.
-                return;
-            }
+                if (object) {
+                    // object with exact hash already exists, abort.
+                    return;
+                }
 
-            try {
-                const promise = new S3.ManagedUpload({
-                    service: s3,
-                    params: {
-                        Bucket: config.bucketName,
-                        Key: key,
-                        Body: redirectLocation,
-                        ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
-                        ContentType: 'application/octet-stream',
-                        WebsiteRedirectLocation: redirectLocation,
-                        ...getParams(key, params)
-                    }
-                }).promise();
-                promises.push(promise);
-                await promise;
-                spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
-            } catch (ex) {
-                spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
-                console.error(pe.render(ex));
-                process.exit(1);
-            }
-        }))
+                try {
+                    const upload = new S3.ManagedUpload({
+                        service: s3,
+                        params: {
+                            Bucket: config.bucketName,
+                            Key: key,
+                            Body: redirectLocation,
+                            ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                            ContentType: 'application/octet-stream',
+                            WebsiteRedirectLocation: redirectLocation,
+                            ...getParams(key, params)
+                        }
+                    })
+
+                    await upload.promise();
+            
+                    spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
+                } catch (ex) {
+                    spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
+                    console.error(pe.render(ex));
+                    process.exit(1);
+                }
+            })
+        ))
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
