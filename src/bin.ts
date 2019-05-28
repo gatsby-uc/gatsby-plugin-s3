@@ -178,8 +178,12 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
         }
 
-        await s3.putBucketWebsite(websiteConfig).promise();
-
+        try {
+            await s3.putBucketWebsite(websiteConfig).promise();
+        } catch (ex) {
+            console.error(ex);
+            process.exit(1);
+        }
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
