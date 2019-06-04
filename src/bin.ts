@@ -109,7 +109,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
-        const permanentRedirects: GatsbyRedirect[] = await readJson(CACHE_FILES.permanentRedirects)
+        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects) ? await readJson(CACHE_FILES.redirectObjects) : []
 
         // Override the bucket name if it is set via command line
         if (bucket) {
@@ -238,7 +238,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }));
         });
 
-        uploadQueue.push(...permanentRedirects.map(redirect =>
+        uploadQueue.push(...redirectObjects.map(redirect =>
             asyncify(async () => {
                 const { fromPath, toPath: redirectLocation } = redirect
 

@@ -132,7 +132,6 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         ];
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
             routingRules.push(...getRules(pluginOptions, permanentRedirects))
-            permanentRedirects = []
         }
         if (routingRules.length > 50) {
             throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.\n` +
@@ -155,10 +154,12 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         JSON.stringify(slsRoutingRules)
     );
 
-    fs.writeFileSync(
-        path.join(program.directory, './.cache/s3.permanentRedirects.json'),
-        JSON.stringify(permanentRedirects)
-    )
+    if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+        fs.writeFileSync(
+            path.join(program.directory, './.cache/s3.redirectObjects.json'),
+            JSON.stringify(permanentRedirects)
+        )
+    }
 
     fs.writeFileSync(
         path.join(program.directory, './.cache/s3.params.json'),
