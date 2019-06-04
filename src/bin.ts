@@ -109,7 +109,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
-        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects) ? await readJson(CACHE_FILES.redirectObjects) : []
+        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects) ? await readJson(CACHE_FILES.redirectObjects) : [];
 
         // Override the bucket name if it is set via command line
         if (bucket) {
@@ -240,11 +240,11 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         uploadQueue.push(...redirectObjects.map(redirect =>
             asyncify(async () => {
-                const { fromPath, toPath: redirectLocation } = redirect
+                const { fromPath, toPath: redirectLocation } = redirect;
 
-                let key = withoutLeadingSlash(fromPath)
+                let key = withoutLeadingSlash(fromPath);
                 if (/\/$/.test(key)) {
-                    key = join(key, 'index.html')
+                    key = join(key, 'index.html');
                 }
 
                 const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
@@ -269,7 +269,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                             WebsiteRedirectLocation: redirectLocation,
                             ...getParams(key, params)
                         }
-                    })
+                    });
 
                     await upload.promise();
             

@@ -108,21 +108,21 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     let slsRoutingRules: ServerlessRoutingRule[] = [];
 
     const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => !redirect.isPermanent)
+        .filter(redirect => !redirect.isPermanent);
     
     let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => redirect.isPermanent)
+        .filter(redirect => redirect.isPermanent);
 
     if (pluginOptions.hostname && pluginOptions.protocol) {
-        const base = `${pluginOptions.protocol}://${pluginOptions.hostname}`
+        const base = `${pluginOptions.protocol}://${pluginOptions.hostname}`;
         permanentRedirects = permanentRedirects.map((redirect) => {
             return {
                 ...redirect,
                 toPath: resolve(base, redirect.toPath)
             }
-        })
+        });
     } else if(pluginOptions.hostname || pluginOptions.protocol) {
-        throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`)
+        throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
     }
 
     if (pluginOptions.generateRoutingRules) {
@@ -131,11 +131,11 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
             ...getRules(pluginOptions, rewrites)
         ];
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
-            routingRules.push(...getRules(pluginOptions, permanentRedirects))
+            routingRules.push(...getRules(pluginOptions, permanentRedirects));
         }
         if (routingRules.length > 50) {
             throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.\n` +
-                `  Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`)
+                `  Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`);
         }
         
         slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
@@ -158,7 +158,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         fs.writeFileSync(
             path.join(program.directory, './.cache/s3.redirectObjects.json'),
             JSON.stringify(permanentRedirects)
-        )
+        );
     }
 
     fs.writeFileSync(
