@@ -13,7 +13,7 @@ if (!TESTING_ENDPOINT) {
 
 console.debug(chalk`{blue.bold INFO} using {bold ${TESTING_ENDPOINT}} as endpoint to test against.`);
 
-const PUBLIC_DIR = path.join(__dirname, 'examples', 'with-redirects', 'public');
+const PUBLIC_DIR = path.join(__dirname, '..', 'examples', 'with-redirects', 'public');
 
 describe('applies caching and content type headers', () => {
     for (const pattern of Object.keys(CACHING_PARAMS)) {
@@ -67,6 +67,18 @@ describe('redirects', () => {
         expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/client-only');
         const followedRedirect = await fetch(response.headers.get('location')!);
         expect(followedRedirect.status).toBe(200);
+    });
+
+    test('special characters using WebsiteRedirectLocation', async () => {
+        const response = await fetch(TESTING_ENDPOINT + '/asdf123.-~_!%24%26\'()*%2B%2C%3B%3D%3A%40%25', { redirect: 'manual' });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/special-characters');
+    });
+
+    test('trailing slash using WebsiteRedirectLocation', async () => {
+        const response = await fetch(TESTING_ENDPOINT + '/trailing-slash/', { redirect: 'manual' });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/trailing-slash/1');
     });
 });
 

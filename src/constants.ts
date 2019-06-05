@@ -6,6 +6,7 @@ export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
     params: path.join('.cache', 's3.params.json'),
     routingRules: path.join('.cache', 's3.routingRules.json'),
+    redirectObjects: path.join('.cache', 's3.redirectObjects.json')
 };
 
 export type Params = {
@@ -46,6 +47,12 @@ export interface PluginOptions {
     // The plugin will generate routing rules to be applied to the website config for all redirects it can find
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
     generateRoutingRules?: boolean,
+
+    // The plugin will not generate routing rules for permanent (301) redirects, but will instead upload empty objects
+    // with the `x-amz-website-redirect-location` property.  This can be used to get around the hard limit of 50
+    // routing rules on AWS S3.
+    // https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html
+    generateRedirectObjectsForPermanentRedirects?: boolean
     
     // The plugin will create a fake index page if a redirect from the root path is made - as a workaround, 
     // Because routing rules can't be applied in that situation
@@ -67,6 +74,8 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
+    // TODO: set this to true by default in the next major version
+    generateRedirectObjectsForPermanentRedirects: false,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,

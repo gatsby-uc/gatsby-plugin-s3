@@ -12,7 +12,7 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, resolve, sep } from 'path';
+import { relative, resolve, sep, join } from 'path';
 import fs from 'fs';
 import util from 'util';
 import minimatch from 'minimatch';
@@ -21,6 +21,7 @@ import inquirer from 'inquirer';
 import { config } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
+import { withoutLeadingSlash } from './util';
 import { parallelLimit, asyncify, AsyncFunction } from 'async';
 
 import { getS3WebsiteDomainUrl } from './util';
@@ -108,6 +109,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
+        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects) ? await readJson(CACHE_FILES.redirectObjects) : [];
 
         // Override the bucket name if it is set via command line
         if (bucket) {
@@ -235,6 +237,50 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
             }));
         });
+
+        uploadQueue.push(...redirectObjects.map(redirect =>
+            asyncify(async () => {
+                const { fromPath, toPath: redirectLocation } = redirect;
+
+                let key = withoutLeadingSlash(fromPath);
+                if (/\/$/.test(key)) {
+                    key = join(key, 'index.html');
+                }
+
+                const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
+                const object = objects.find(object => object.Key === key && object.ETag === tag);
+
+                isKeyInUse[key] = true;
+
+                if (object) {
+                    // object with exact hash already exists, abort.
+                    return;
+                }
+
+                try {
+                    const upload = new S3.ManagedUpload({
+                        service: s3,
+                        params: {
+                            Bucket: config.bucketName,
+                            Key: key,
+                            Body: redirectLocation,
+                            ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
+                            ContentType: 'application/octet-stream',
+                            WebsiteRedirectLocation: redirectLocation,
+                            ...getParams(key, params)
+                        }
+                    });
+
+                    await upload.promise();
+            
+                    spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
+                } catch (ex) {
+                    spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
+                    console.error(pe.render(ex));
+                    process.exit(1);
+                }
+            })
+        ))
 
         // now we play the waiting game.
         await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is

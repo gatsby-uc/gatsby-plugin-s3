@@ -24,6 +24,7 @@
     "devDependencies": {
         "@babel/cli": "^7.2.3",
         "@babel/core": "^7.2.2",
+        "@babel/polyfill": "^7.4.4",
         "@babel/preset-env": "^7.2.3",
         "@babel/preset-typescript": "^7.1.0",
         "@types/es6-promisify": "^6.0.0",
@@ -38,6 +39,7 @@
         "@types/ora": "^3.0.0",
         "@types/stream-to-promise": "^2.2.0",
         "@types/yargs": "^12.0.2",
+        "babel-jest": "^23.6.0",
         "es6-promisify": "^6.0.1",
         "gatsby": "^2.0.72",
         "glob": "^7.1.3",
@@ -81,6 +83,23 @@
         "testPathIgnorePatterns": [
             "/node_modules/",
             "/.cache/"
+        ],
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js",
+            "json",
+            "jsx",
+            "node"
+        ],
+        "testMatch": [
+            "**/?(*.)+(spec|test).ts"
+        ],
+        "transform": {
+            "^.+\\.tsx?$": "babel-jest"
+        },
+        "setupFiles": [
+            "@babel/polyfill"
         ]
     }
 }
