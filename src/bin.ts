@@ -164,24 +164,25 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             await s3.createBucket(params).promise();
         }
 
-        const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
-            Bucket: config.bucketName,
-            WebsiteConfiguration: {
-                IndexDocument: {
-                    Suffix: 'index.html'
-                },
-                ErrorDocument: {
-                    Key: '404.html'
+        if(config.hostSiteFromS3) {
+            const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
+                Bucket: config.bucketName,
+                WebsiteConfiguration: {
+                    IndexDocument: {
+                        Suffix: 'index.html'
+                    },
+                    ErrorDocument: {
+                        Key: '404.html'
+                    }
                 }
+            };
+
+            if (routingRules.length) {
+                websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
             }
-        };
 
-        if (routingRules.length) {
-            websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
+            await s3.putBucketWebsite(websiteConfig).promise();
         }
-
-        await s3.putBucketWebsite(websiteConfig).promise();
-
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
@@ -304,12 +305,18 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         }
 
         spinner.succeed('Synced.');
-
-        const s3WebsiteDomain = getS3WebsiteDomainUrl(region || 'us-east-1');
-        console.log(chalk`
-        {bold Your website is online at:}
-        {blue.underline http://${config.bucketName}.${s3WebsiteDomain}}
-        `);
+        if(config.hostSiteFromS3) {
+            const s3WebsiteDomain = getS3WebsiteDomainUrl(region || 'us-east-1');
+            console.log(chalk`
+            {bold Your website is online at:}
+            {blue.underline http://${config.bucketName}.${s3WebsiteDomain}}
+            `);
+        } else {
+            console.log(chalk`
+            {bold Your website has now been published to:}
+            {blue.underline ${config.bucketName}}
+            `);
+        }
     }
     catch (ex) {
         spinner.fail('Failed.');

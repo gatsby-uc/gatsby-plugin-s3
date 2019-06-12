@@ -65,7 +65,10 @@ export interface PluginOptions {
     removeNonexistentObjects?: boolean,
     
     // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
-    customAwsEndpointHostname?: string
+    customAwsEndpointHostname?: string,
+
+    // Override S3 website bucket hosting, for example when used with Cloudfront
+    hostSiteFromS3?: boolean
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -79,6 +82,7 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
+    hostSiteFromS3: true,
 };
 
 export const CACHING_PARAMS: Params = {
