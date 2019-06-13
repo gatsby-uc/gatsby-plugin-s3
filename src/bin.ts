@@ -164,7 +164,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             await s3.createBucket(params).promise();
         }
 
-        if(config.hostSiteFromS3) {
+        if(!config.disableS3StaticWebsiteHosting) {
             const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
                 Bucket: config.bucketName,
                 WebsiteConfiguration: {
@@ -305,7 +305,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         }
 
         spinner.succeed('Synced.');
-        if(config.hostSiteFromS3) {
+        if(!config.disableS3StaticWebsiteHosting) {
             const s3WebsiteDomain = getS3WebsiteDomainUrl(region || 'us-east-1');
             console.log(chalk`
             {bold Your website is online at:}

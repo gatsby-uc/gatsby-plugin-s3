@@ -68,7 +68,7 @@ export interface PluginOptions {
     customAwsEndpointHostname?: string,
 
     // Override S3 website bucket hosting, for example when used with Cloudfront
-    hostSiteFromS3?: boolean
+    disableS3StaticWebsiteHosting?: boolean
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -82,7 +82,7 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
-    hostSiteFromS3: true,
+    disableS3StaticWebsiteHosting: true,
 };
 
 export const CACHING_PARAMS: Params = {
