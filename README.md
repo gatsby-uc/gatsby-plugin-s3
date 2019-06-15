@@ -93,7 +93,8 @@ Default configuration is as follows:
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
-    customAwsEndpointHostname: undefined
+    customAwsEndpointHostname: undefined,
+    enableS3StaticWebsiteHosting: true
 };
 ```
 

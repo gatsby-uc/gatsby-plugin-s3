@@ -65,7 +65,13 @@ export interface PluginOptions {
     removeNonexistentObjects?: boolean,
     
     // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
-    customAwsEndpointHostname?: string
+    customAwsEndpointHostname?: string,
+
+    // Disables modifications to the S3 Static Website Hosting configuration. Without S3 Static Website Hosting some features
+    // (index.html rewriting, trailing slash redirects, and serverside redirects) will not function. Not recommended,
+    // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
+    // the static website hosting functionality.
+    enableS3StaticWebsiteHosting?: boolean
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -79,6 +85,7 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
+    enableS3StaticWebsiteHosting: true,
 };
 
 export const CACHING_PARAMS: Params = {
