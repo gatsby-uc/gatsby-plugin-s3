@@ -16,4 +16,16 @@ exports.createPages = ({ actions }) => {
         toPath: '/client-only',
         isPermanent: false
     });
+
+    actions.createRedirect({
+        fromPath: '/asdf123.-~_!$&\'()*+,;=:@%',
+        toPath: '/special-characters',
+        isPermanent: true
+    });
+
+    actions.createRedirect({
+        fromPath: '/trailing-slash/',
+        toPath: '/trailing-slash/1',
+        isPermanent: true
+    });
 };

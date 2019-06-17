@@ -89,10 +89,12 @@ Default configuration is as follows:
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
+    generateRedirectObjectsForPermanentRedirects: true,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
-    customAwsEndpointHostname: undefined
+    customAwsEndpointHostname: undefined,
+    enableS3StaticWebsiteHosting: true
 };
 ```
 
@@ -150,3 +152,10 @@ Yandex example:
 
 You can deploy your site to a prefix, leaving all other data in the bucket intact.  
 `gatsby-plugin-s3` respects the `pathPrefix` gatsby option with no additional setup needed for this plugin, so you can [follow the guide in the gatsby docs.](https://www.gatsbyjs.org/docs/path-prefix/) 
+
+### AWS S3 Routing Rules Limit
+
+AWS S3 has an undocumented limit on the number of Routing Rules that can be applied to a bucket.  Unfortunately this limits 
+the number of 302 (temporary) redirects you can create.  For 301 (permanent) redirects, a way to get around the limit is 
+[setting the `x-amz-website-redirect-location` header on an empty object](https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html).
+To enable this behavior, set the `generateRedirectObjectsForPermanentRedirects` configuration option to `true`.

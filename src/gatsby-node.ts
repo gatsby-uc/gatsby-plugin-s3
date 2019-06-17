@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { resolve } from 'url';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
@@ -106,11 +107,36 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     let routingRules: RoutingRule[] = [];
     let slsRoutingRules: ServerlessRoutingRule[] = [];
 
+    const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
+        .filter(redirect => !redirect.isPermanent);
+    
+    let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
+        .filter(redirect => redirect.isPermanent);
+
+    if (pluginOptions.hostname && pluginOptions.protocol) {
+        const base = `${pluginOptions.protocol}://${pluginOptions.hostname}`;
+        permanentRedirects = permanentRedirects.map((redirect) => {
+            return {
+                ...redirect,
+                toPath: resolve(base, redirect.toPath)
+            }
+        });
+    } else if(pluginOptions.hostname || pluginOptions.protocol) {
+        throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
+    }
+
     if (pluginOptions.generateRoutingRules) {
         routingRules = [
-            ...getRules(pluginOptions, redirects.filter(redirect => redirect.fromPath !== '/')),
+            ...getRules(pluginOptions, temporaryRedirects),
             ...getRules(pluginOptions, rewrites)
         ];
+        if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+            routingRules.push(...getRules(pluginOptions, permanentRedirects));
+        }
+        if (routingRules.length > 50) {
+            throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.\n` +
+                `  Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`);
+        }
         
         slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
             RoutingRuleCondition: Condition,
@@ -127,6 +153,13 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         path.join(program.directory, './.cache/s3.sls.routingRules.json'),
         JSON.stringify(slsRoutingRules)
     );
+
+    if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+        fs.writeFileSync(
+            path.join(program.directory, './.cache/s3.redirectObjects.json'),
+            JSON.stringify(permanentRedirects)
+        );
+    }
 
     fs.writeFileSync(
         path.join(program.directory, './.cache/s3.params.json'),
