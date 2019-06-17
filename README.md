@@ -148,7 +148,7 @@ Yandex example:
 };
 ```
 
-## Deploying your gatsby site under a prefix in your bucket
+### Deploying your gatsby site under a prefix in your bucket
 
 You can deploy your site to a prefix, leaving all other data in the bucket intact.  
 `gatsby-plugin-s3` respects the `pathPrefix` gatsby option with no additional setup needed for this plugin, so you can [follow the guide in the gatsby docs.](https://www.gatsbyjs.org/docs/path-prefix/) 
