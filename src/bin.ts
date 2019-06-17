@@ -247,6 +247,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 if (/\/$/.test(key)) {
                     key = join(key, 'index.html');
                 }
+                key = createSafeS3Key(key);
 
                 const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
                 const object = objects.find(object => object.Key === key && object.ETag === tag);
