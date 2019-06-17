@@ -135,6 +135,7 @@ Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
 
 
 ### Using Yandex S3 or any AWS supported services with gatsby-plugin-s3
+
 To use Yandex S3 or any supported AWS services you need only to change region & customAwsEndpointHostname params (provided by service) before deploy.
 Yandex example:
 ```typescript
@@ -144,3 +145,8 @@ Yandex example:
     customAwsEndpointHostname: 'storage.yandexcloud.net'
 };
 ```
+
+## Deploying your gatsby site under a prefix in your bucket
+
+You can deploy your site to a prefix, leaving all other data in the bucket intact.  
+`gatsby-plugin-s3` respects the `pathPrefix` gatsby option with no additional setup needed for this plugin, so you can [follow the guide in the gatsby docs.](https://www.gatsbyjs.org/docs/path-prefix/) 
