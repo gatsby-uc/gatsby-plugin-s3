@@ -29,7 +29,7 @@ describe('applies caching and content type headers', () => {
             const response = await fetch(`${TESTING_ENDPOINT}/${file}`);
             const contentType = mime.getType(file) || 'application/octet-stream';
             expect(response.ok).toBe(true);
-            expect(response.headers.get('cache-control')).toBe(params['CacheControl']);
+            expect(response.headers.get('cache-control')).toBe(params.CacheControl);
             expect(response.headers.get('content-type')).toBe(contentType);
         });
     }
@@ -70,7 +70,10 @@ describe('redirects', () => {
     });
 
     test('special characters using WebsiteRedirectLocation', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/asdf123.-~_!%24%26\'()*%2B%2C%3B%3D%3A%40%25', { redirect: 'manual' });
+        const response = await fetch(
+            TESTING_ENDPOINT + '/asdf123.-~_!%24%26\'()*%2B%2C%3B%3D%3A%40%25', 
+            { redirect: 'manual' }
+        );
         expect(response.status).toBe(301);
         expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/special-characters');
     });
@@ -81,4 +84,3 @@ describe('redirects', () => {
         expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/trailing-slash/1');
     });
 });
-

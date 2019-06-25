@@ -6,7 +6,7 @@ export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
     params: path.join('.cache', 's3.params.json'),
     routingRules: path.join('.cache', 's3.routingRules.json'),
-    redirectObjects: path.join('.cache', 's3.redirectObjects.json')
+    redirectObjects: path.join('.cache', 's3.redirectObjects.json'),
 };
 
 export type Params = {
@@ -15,18 +15,19 @@ export type Params = {
 
 export interface PluginOptions {
     // Your bucket name (required)
-    bucketName: string,
+    bucketName: string;
     
     // Your region
     // If not specified: will default to whatever the AWS SDK decides is the default otherwise
     // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-environment-variable
-    region?: string,
+    region?: string;
 
     // The protocol & hostname of your site
-    // If you are using a CDN or reverse-proxy (such as CloudFront) in front of S3 then you must fill out these fields to ensure redirects work correctly
+    // If you are using a CDN or reverse-proxy (such as CloudFront) in front of S3 
+    // then you must fill out these fields to ensure redirects work correctly
     // If you are just using your S3 website directly, this is unnecessary
-    protocol?: "http" | "https",
-    hostname?: string,
+    protocol?: 'http' | 'https';
+    hostname?: string;
     
     // Custom params to apply to your files
     // see all available params here: 
@@ -35,43 +36,45 @@ export interface PluginOptions {
     // { '/static/**': {
     //     CacheControl: 'public, max-age=31536000, immutable'
     // },
-    params?: Params,
+    params?: Params;
 
     // Define bucket ACL, defaults to 'public-read'
     // If you don't want to use an ACL, set this to null
     acl?: null | BucketCannedACL;
 
     // Enable gatsby recommended caching settings
-    mergeCachingParams?: boolean,
+    mergeCachingParams?: boolean;
 
     // The plugin will generate routing rules to be applied to the website config for all redirects it can find
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
-    generateRoutingRules?: boolean,
+    generateRoutingRules?: boolean;
 
     // The plugin will not generate routing rules for permanent (301) redirects, but will instead upload empty objects
     // with the `x-amz-website-redirect-location` property.  This can be used to get around the hard limit of 50
     // routing rules on AWS S3.
     // https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html
-    generateRedirectObjectsForPermanentRedirects?: boolean
+    generateRedirectObjectsForPermanentRedirects?: boolean;
     
     // The plugin will create a fake index page if a redirect from the root path is made - as a workaround, 
     // Because routing rules can't be applied in that situation
-    generateIndexPageForRedirect?: boolean,
+    generateIndexPageForRedirect?: boolean;
     
     // Generate rewrites for client only paths
-    generateMatchPathRewrites?: boolean,
+    generateMatchPathRewrites?: boolean;
 
     // Remove S3 objects if they no longer exist locally
-    removeNonexistentObjects?: boolean,
+    removeNonexistentObjects?: boolean;
     
     // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
-    customAwsEndpointHostname?: string,
+    customAwsEndpointHostname?: string;
 
-    // Disables modifications to the S3 Static Website Hosting configuration. Without S3 Static Website Hosting some features
-    // (index.html rewriting, trailing slash redirects, and serverside redirects) will not function. Not recommended,
+    // Disables modifications to the S3 Static Website Hosting configuration. 
+    // Without S3 Static Website Hosting some features 
+    // (index.html rewriting, trailing slash redirects, and serverside redirects) 
+    // will not function. Not recommended,
     // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
     // the static website hosting functionality.
-    enableS3StaticWebsiteHosting?: boolean
+    enableS3StaticWebsiteHosting?: boolean;
 } 
 
 export const DEFAULT_OPTIONS: PluginOptions = {
@@ -90,18 +93,18 @@ export const DEFAULT_OPTIONS: PluginOptions = {
 
 export const CACHING_PARAMS: Params = {
     '**/**.html': {
-        CacheControl: 'public, max-age=0, must-revalidate'
+        CacheControl: 'public, max-age=0, must-revalidate',
     },
     'static/**': {
         CacheControl: 'public, max-age=31536000, immutable',
     },
     '**/**/!(sw).js': {
-        CacheControl: 'public, max-age=31536000, immutable'
+        CacheControl: 'public, max-age=31536000, immutable',
     },
     '**/**.css': {
-        CacheControl: 'public, max-age=31536000, immutable'
+        CacheControl: 'public, max-age=31536000, immutable',
     },
     'sw.js': {
-        CacheControl: 'public, max-age=0, must-revalidate'
-    }
+        CacheControl: 'public, max-age=0, must-revalidate',
+    },
 };

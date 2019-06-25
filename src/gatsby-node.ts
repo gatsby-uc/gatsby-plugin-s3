@@ -8,9 +8,9 @@ import { resolve } from 'url';
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
 interface ServerlessRoutingRule {
-    RoutingRuleCondition: RoutingRule['Condition'],
-    RedirectRule: RoutingRule['Redirect']
-};
+    RoutingRuleCondition: RoutingRule['Condition'];
+    RedirectRule: RoutingRule['Redirect'];
+}
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
@@ -18,17 +18,16 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
     routes.map(route => ({
         Condition: {
             KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-            HttpErrorCodeReturnedEquals: '404'
+            HttpErrorCodeReturnedEquals: '404',
         },
         Redirect: {
             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
-        }
-    })
-    )
-)
+        },
+    }))
+);
 
 let params: Params = {};
 
@@ -44,8 +43,6 @@ export const onPreBootstrap = ({ reporter }: any, { bucketName }: PluginOptions)
     params = {};
 };
 
-// I have no understanding of what createPagesStatefully is supposed to accomplish.
-// all I know is that it's being ran after createPages which is what I need to create pages after the other plugins have.
 export const createPagesStatefully = ({ store, actions: { createPage } }: any, userPluginOptions: PluginOptions) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages }: GatsbyState = store.getState();
@@ -58,15 +55,15 @@ export const createPagesStatefully = ({ store, actions: { createPage } }: any, u
                 // no index page yet, create one so we can add a redirect to it's metadata when uploading
                 createPage({
                     path: '/',
-                    component: path.join(__dirname, './fake-index.js')
+                    component: path.join(__dirname, './fake-index.js'),
                 });
             }
 
             params = {
                 ...params,
                 'index.html': {
-                    WebsiteRedirectLocation: indexRedirect.toPath
-                }
+                    WebsiteRedirectLocation: indexRedirect.toPath,
+                },
             };
         }
     }
@@ -88,20 +85,20 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
                     page.matchPath.endsWith('*')
                         ? page.matchPath.substring(0, page.matchPath.length - 1)
                         : page.matchPath,
-                toPath: page.path
+                toPath: page.path,
             }));
     }
 
     if (pluginOptions.mergeCachingParams) {
         params = {
             ...params,
-            ...CACHING_PARAMS
+            ...CACHING_PARAMS,
         };
     }
 
     params = {
         ...params,
-        ...pluginOptions.params
+        ...pluginOptions.params,
     };
 
     let routingRules: RoutingRule[] = [];
@@ -109,7 +106,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
 
     const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => !redirect.isPermanent);
-    
+
     let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => redirect.isPermanent);
 
@@ -118,29 +115,31 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
         permanentRedirects = permanentRedirects.map((redirect) => {
             return {
                 ...redirect,
-                toPath: resolve(base, redirect.toPath)
-            }
+                toPath: resolve(base, redirect.toPath),
+            };
         });
-    } else if(pluginOptions.hostname || pluginOptions.protocol) {
+    } else if (pluginOptions.hostname || pluginOptions.protocol) {
         throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
     }
 
     if (pluginOptions.generateRoutingRules) {
         routingRules = [
             ...getRules(pluginOptions, temporaryRedirects),
-            ...getRules(pluginOptions, rewrites)
+            ...getRules(pluginOptions, rewrites),
         ];
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
             routingRules.push(...getRules(pluginOptions, permanentRedirects));
         }
         if (routingRules.length > 50) {
-            throw new Error(`${routingRules.length} routing rules provided, the number of routing rules in a website configuration is limited to 50.\n` +
-                `  Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`);
+            throw new Error(
+                `${routingRules.length} routing rules provided, the number of routing rules 
+in a website configuration is limited to 50.
+Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`);
         }
-        
+
         slsRoutingRules = routingRules.map(({ Redirect, Condition }) => ({
             RoutingRuleCondition: Condition,
-            RedirectRule: Redirect
+            RedirectRule: Redirect,
         }));
     }
 

@@ -12,45 +12,46 @@ import streamToPromise from 'stream-to-promise';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
-import { relative, resolve, sep, join } from 'path';
+import { join, relative, resolve, sep } from 'path';
 import fs from 'fs';
 import util from 'util';
 import minimatch from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
-import { config } from 'aws-sdk';
+import { config as awsConfig } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { withoutLeadingSlash } from './util';
-import { parallelLimit, asyncify, AsyncFunction } from 'async';
-
-import { getS3WebsiteDomainUrl } from './util';
+import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
+import { AsyncFunction, asyncify, parallelLimit } from 'async';
 
 const cli = yargs();
 const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
 
-const promisifiedParallelLimit: <T, E = Error>(tasks: AsyncFunction<T, E>[], limit: number) => Promise<Array<T>> = util.promisify(parallelLimit) as any; // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
+const promisifiedParallelLimit: <T, E = Error>(tasks: Array<AsyncFunction<T, E>>, limit: number) =>
+    // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
+    // tslint:disable-next-line:no-any
+    Promise<T[]> = util.promisify(parallelLimit) as any;
 
 const guessRegion = (s3: S3, constraint: void | string | undefined) => (
-    constraint || s3.config.region || config.region
+    constraint || s3.config.region || awsConfig.region
 );
 
 const getBucketInfo = async (config: PluginOptions, s3: S3): Promise<{ exists: boolean, region?: string }> => {
     try {
         const { $response } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
-        
+
         const detectedRegion = guessRegion(s3, ($response.data && $response.data.LocationConstraint));
         return {
             exists: true,
-            region: detectedRegion
+            region: detectedRegion,
         };
     } catch (ex) {
         if (ex.code === 'NoSuchBucket') {
             return {
                 exists: false,
-                region: guessRegion(s3)
+                region: guessRegion(s3),
             };
         } else {
             throw ex;
@@ -64,7 +65,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
         if (minimatch(path, key)) {
             returned = {
                 ...returned,
-                ...params[key]
+                ...params[key],
             };
         }
     }
@@ -74,12 +75,12 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
 
 const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> => {
     const list: ObjectList = [];
-    
+
     let token: NextToken | undefined;
     do {
         const response = await s3.listObjectsV2({
             Bucket: bucketName,
-            ContinuationToken: token
+            ContinuationToken: token,
         }).promise();
 
         if (response.Contents) {
@@ -87,7 +88,7 @@ const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> =
         }
 
         token = response.NextContinuationToken;
-    } while(token);
+    } while (token);
 
     return list;
 };
@@ -102,14 +103,16 @@ const createSafeS3Key = (key: string): string => {
 
 const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
-    
-    const uploadQueue:  Array<AsyncFunction<void, Error>> = [];
+
+    const uploadQueue: Array<AsyncFunction<void, Error>> = [];
 
     try {
         const config: PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
-        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects) ? await readJson(CACHE_FILES.redirectObjects) : [];
+        const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects)
+            ? await readJson(CACHE_FILES.redirectObjects)
+            : [];
 
         // Override the bucket name if it is set via command line
         if (bucket) {
@@ -118,7 +121,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         const s3 = new S3({
             region: config.region,
-            endpoint: config.customAwsEndpointHostname
+            endpoint: config.customAwsEndpointHostname,
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
@@ -134,12 +137,14 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
     Deploying to bucket: {cyan.bold ${config.bucketName}}
     In region: {yellow.bold ${region || 'UNKNOWN!'}}
-    Gatsby will: ${!exists ? chalk`{bold.greenBright CREATE}` : chalk`{bold.blueBright UPDATE} {dim (any existing website configuration will be overwritten!)}`}
+    Gatsby will: ${!exists
+                ? chalk`{bold.greenBright CREATE}`
+                : chalk`{bold.blueBright UPDATE} {dim (any existing website configuration will be overwritten!)}`}
 `);
             const { confirm } = await inquirer.prompt([{
                 message: 'OK?',
                 name: 'confirm',
-                type: 'confirm'
+                type: 'confirm',
             }]);
 
             if (!confirm) {
@@ -152,29 +157,29 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         spinner.color = 'yellow';
 
         if (!exists) {
-            let params: S3.Types.CreateBucketRequest = {
+            const createParams: S3.Types.CreateBucketRequest = {
                 Bucket: config.bucketName,
-                ACL: config.acl === null ? undefined : (config.acl || 'public-read')
+                ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
             };
             if (config.region) {
-                params['CreateBucketConfiguration'] = {
-                    LocationConstraint: config.region
+                createParams.CreateBucketConfiguration = {
+                    LocationConstraint: config.region,
                 };
             }
-            await s3.createBucket(params).promise();
+            await s3.createBucket(createParams).promise();
         }
 
-        if(config.enableS3StaticWebsiteHosting) {
+        if (config.enableS3StaticWebsiteHosting) {
             const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
                 Bucket: config.bucketName,
                 WebsiteConfiguration: {
                     IndexDocument: {
-                        Suffix: 'index.html'
+                        Suffix: 'index.html',
                     },
                     ErrorDocument: {
-                        Key: '404.html'
-                    }
-                }
+                        Key: '404.html',
+                    },
+                },
             };
 
             if (routingRules.length) {
@@ -192,7 +197,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         spinner.text = 'Syncing...';
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
-        let isKeyInUse: { [objectKey: string]: boolean } = {};
+        const isKeyInUse: { [objectKey: string]: boolean } = {};
 
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
@@ -200,15 +205,15 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }
             uploadQueue.push(asyncify(async () => {
                 const key = createSafeS3Key(relative(publicDir, path));
-                const stream = fs.createReadStream(path);
-                const hashStream = stream.pipe(createHash('md5').setEncoding('hex'));
-                const data = await streamToPromise(hashStream)
-    
+                const readStream = fs.createReadStream(path);
+                const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
+                const data = await streamToPromise(hashStream);
+
                 const tag = `"${data}"`;
-                const object = objects.find(object => object.Key === key && object.ETag === tag);
-    
+                const object = objects.find(currObj => currObj.Key === key && currObj.ETag === tag);
+
                 isKeyInUse[key] = true;
-            
+
                 if (!object) {
                     try {
                         const upload = new S3.ManagedUpload({
@@ -219,17 +224,18 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                                 Body: fs.createReadStream(path),
                                 ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                                 ContentType: mime.getType(path) || 'application/octet-stream',
-                                ...getParams(key, params)
-                            }
-                        })
-        
+                                ...getParams(key, params),
+                            },
+                        });
+
                         upload.on('httpUploadProgress', (evt) => {
-                            spinner.text = chalk`Syncing...\n{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`
-                        })
-        
+                            spinner.text = chalk`Syncing...
+{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
+                        });
+
                         await upload.promise();
                         spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-        
+
                     } catch (ex) {
                         console.error(ex);
                         process.exit(1);
@@ -250,7 +256,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 key = createSafeS3Key(key);
 
                 const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
-                const object = objects.find(object => object.Key === key && object.ETag === tag);
+                const object = objects.find(currObj => currObj.Key === key && currObj.ETag === tag);
 
                 isKeyInUse[key] = true;
 
@@ -269,44 +275,49 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                             ACL: config.acl === null ? undefined : (config.acl || 'public-read'),
                             ContentType: 'application/octet-stream',
                             WebsiteRedirectLocation: redirectLocation,
-                            ...getParams(key, params)
-                        }
+                            ...getParams(key, params),
+                        },
                     });
 
                     await upload.promise();
-            
-                    spinner.text = chalk`Syncing...\n{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
+
+                    spinner.text = chalk`Syncing...
+{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
                 } catch (ex) {
                     spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
                     console.error(pe.render(ex));
                     process.exit(1);
                 }
             })
-        ))
+        ));
 
-        // now we play the waiting game.
-        await streamToPromise(stream as any as Readable); // todo: find out why the typing won't allow this as-is
+        // tslint:disable-next-line:no-any todo: find out why the typing won't allow this as-is
+        await streamToPromise(stream as any as Readable);
         await promisifiedParallelLimit(uploadQueue, 20);
-        
+
         if (config.removeNonexistentObjects) {
-            const objectsToRemove = objects.map(obj => ({ Key: <string>obj.Key })).filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+            const objectsToRemove = objects.map(obj => ({ Key: obj.Key as string }))
+                .filter(obj => obj.Key && !isKeyInUse[obj.Key]);
 
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
                 const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
 
-                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
+                spinner.text =
+                    `Removing objects ${i + 1} to ${i +
+                    objectsToRemoveInThisRequest.length} of ${objectsToRemove.length}`;
+
                 await s3.deleteObjects({
                     Bucket: config.bucketName,
                     Delete: {
                         Objects: objectsToRemoveInThisRequest,
-                        Quiet: true
-                    }
+                        Quiet: true,
+                    },
                 }).promise();
             }
         }
 
         spinner.succeed('Synced.');
-        if(config.enableS3StaticWebsiteHosting) {
+        if (config.enableS3StaticWebsiteHosting) {
             const s3WebsiteDomain = getS3WebsiteDomainUrl(region || 'us-east-1');
             console.log(chalk`
             {bold Your website is online at:}
@@ -318,8 +329,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             {blue.underline ${config.bucketName}}
             `);
         }
-    }
-    catch (ex) {
+    } catch (ex) {
         spinner.fail('Failed.');
         console.error(pe.render(ex));
         process.exit(1);
@@ -334,11 +344,11 @@ cli
             args.option('yes', {
                 alias: 'y',
                 describe: 'Skip confirmation prompt',
-                boolean: true
+                boolean: true,
             });
             args.option('bucket', {
                 alias: 'b',
-                describe: 'Bucket name (if you wish to override default bucket name)'
+                describe: 'Bucket name (if you wish to override default bucket name)',
             });
         },
         deploy
@@ -349,4 +359,3 @@ cli
     .showHelpOnFail(true)
     .recommendCommands()
     .parse(process.argv.slice(2));
-
