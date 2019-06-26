@@ -13,6 +13,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { Readable } from 'stream';
 import { join, relative, resolve, sep } from 'path';
+import { resolve as resolveUrl } from 'url';
 import fs from 'fs';
 import util from 'util';
 import minimatch from 'minimatch';
@@ -245,9 +246,11 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             }));
         });
 
+        const base = (config.protocol && config.hostname) ? `${config.protocol}://${config.hostname}` : null;
         uploadQueue.push(...redirectObjects.map(redirect =>
             asyncify(async () => {
-                const { fromPath, toPath: redirectLocation } = redirect;
+                const { fromPath, toPath: redirectPath } = redirect;
+                const redirectLocation = base ? resolveUrl(base, redirectPath) : redirectPath;
 
                 let key = withoutLeadingSlash(fromPath);
                 if (/\/$/.test(key)) {
