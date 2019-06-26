@@ -89,7 +89,7 @@ Default configuration is as follows:
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
-    generateRedirectObjectsForPermanentRedirects: true,
+    generateRedirectObjectsForPermanentRedirects: false,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
