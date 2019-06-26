@@ -1,0 +1,84 @@
+version: 2.1
+
+executors:
+  node:
+    docker:
+      - image: circleci/node:4.8.2
+    working_directory: /tmp
+
+jobs:
+  install:
+    executor: node
+    steps:
+      - checkout
+      - run:
+        name: verify-lock
+        command: 'npm ls' # This will throw an error if package-lock.json doesn't satisfy package.json
+      - restore_cache:
+        key: dependency-cache-{{ checksum "package-lock.json" }}
+      - run:
+        name: install-dependencies
+        command: '[! -d "./node_modules/"] && npm ci' # Install dependencies only if they couldn't be restored from the cache
+      - save_cache:
+        key: dependency-cache-{{ checksum "package-lock.json" }}
+        paths:
+          - ./node_modules
+      - persist_to_workspace:
+        root: .
+        paths:
+          - .
+  lint:
+    executor: node
+    steps:
+      - attach_workspace:
+        at: .
+      - run:
+        name: lint
+        command: tslint --format junit --o reports/linter-results.xml
+      - store_artifacts:
+        prefix: tests
+        path: "./reports"
+      - store_test_results:
+        path: "./reports"
+
+  build:
+    executor: node
+    steps:
+      - attach_workspace:
+        at: .
+      - run:
+        name: build
+        command: npm run-script build
+      - persist_to_workspace:
+        root: .
+        paths:
+          - .
+  test-e2e:
+    executor: node
+    steps:
+      - attach_workspace:
+        at: .
+      - run:
+        name: e2e-tests
+        command: jest --ci --runInBand --reporters=default --reporters=jest-junit
+        environment:
+          JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
+      - store_artifacts:
+        prefix: tests
+        path: "./reports"
+      - store_test_results:
+        path: "./reports"
+
+workflows:
+  main:
+    jobs:
+      - install
+      - lint
+        requires:
+          - install
+      - build
+        requires:
+          - install
+      - test-e2e
+        requires:
+          - build
