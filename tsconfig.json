@@ -22,17 +22,12 @@
         "noUnusedLocals": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "baseUrl": "./src"
     },
-    "exclude": [
-        "node_modules",
-        "build",
-        "scripts",
-        "acceptance-tests",
-        "webpack",
-        "jest",
-        "src/setupTests.ts",
-        "public",
-        "examples"
-    ]
+    "include": [
+        "./src",
+        "./typings"
+    ],
+    "exclude": []
 }

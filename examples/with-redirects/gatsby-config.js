@@ -8,9 +8,9 @@ module.exports = {
         {
             resolve: `gatsby-plugin-s3`,
             options: {
-                bucketName: 'gatsby-plugin-s3-' + process.env.AWS_STAGE,
+                bucketName: process.env.TARGET_BUCKET,
                 region: 'eu-west-1',
-                generateRedirectObjectsForPermanentRedirects: true
+                generateRedirectObjectsForPermanentRedirects: !process.env.LEGACY_REDIRECTS
             },
         },
         {
