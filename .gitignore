@@ -75,4 +75,4 @@ jspm_packages/
 /*.js
 /*.js.map
 
-test/
+/test/

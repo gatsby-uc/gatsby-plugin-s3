@@ -4,3 +4,4 @@ src/
 typings/
 test/
 .idea/
+.env

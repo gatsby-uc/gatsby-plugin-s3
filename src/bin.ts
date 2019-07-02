@@ -102,7 +102,7 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
+const deploy = async ({ yes, bucket, userAgent }: { yes: boolean, bucket: string, userAgent: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
 
     const uploadQueue: Array<AsyncFunction<void, Error>> = [];
@@ -123,6 +123,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
+            customUserAgent: userAgent || '',
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
@@ -352,6 +353,9 @@ cli
             args.option('bucket', {
                 alias: 'b',
                 describe: 'Bucket name (if you wish to override default bucket name)',
+            });
+            args.option('userAgent', {
+                describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
             });
         },
         deploy
