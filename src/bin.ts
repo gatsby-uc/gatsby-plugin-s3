@@ -74,7 +74,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> => {
+const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectList> => {
     const list: ObjectList = [];
 
     let token: NextToken | undefined;
@@ -82,6 +82,7 @@ const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> =
         const response = await s3.listObjectsV2({
             Bucket: bucketName,
             ContinuationToken: token,
+            Prefix: bucketPrefix,
         }).promise();
 
         if (response.Contents) {
@@ -192,7 +193,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
-        const objects = await listAllObjects(s3, config.bucketName);
+        const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
@@ -205,7 +206,10 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                 return;
             }
             uploadQueue.push(asyncify(async () => {
-                const key = createSafeS3Key(relative(publicDir, path));
+                let key = createSafeS3Key(relative(publicDir, path));
+                if (config.bucketPrefix) {
+                    key = `${config.bucketPrefix}/${key}`;
+                }
                 const readStream = fs.createReadStream(path);
                 const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
                 const data = await streamToPromise(hashStream);
@@ -257,6 +261,9 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                     key = join(key, 'index.html');
                 }
                 key = createSafeS3Key(key);
+                if (config.bucketPrefix) {
+                    key = `${config.bucketPrefix}/${key}`;
+                }
 
                 const tag = `"${createHash('md5').update(redirectLocation).digest('hex')}"`;
                 const object = objects.find(currObj => currObj.Key === key && currObj.ETag === tag);
