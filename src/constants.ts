@@ -26,6 +26,10 @@ export interface S3PluginOptions extends PluginOptions {
     // Your bucket name (required)
     bucketName: string;
 
+    // An optional prefix/directory to use on the bucket. This requires the bucket to already be
+    // created. Do not include leading or trailing slashes. Can be useful with CloudFront originPath option.
+    bucketPrefix?: string;
+
     // Your region
     // If not specified: will default to whatever the AWS SDK decides is the default otherwise
     // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html#setting-region-environment-variable
