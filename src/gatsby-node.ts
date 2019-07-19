@@ -16,17 +16,38 @@ interface ServerlessRoutingRule {
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
     routes.map(route => ({
         Condition: {
-            KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
-            HttpErrorCodeReturnedEquals: '404',
+            ...buildCondition(route.fromPath),
         },
         Redirect: {
+            ...buildRedirect(pluginOptions, route),
+        },      
+    }))
+);
+const buildCondition = (redirectPath: string) => {
+    return {
+        KeyPrefixEquals: withoutLeadingSlash(redirectPath),
+        HttpErrorCodeReturnedEquals: '404',
+    };
+};
+
+const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect) => {
+    if (route.toPath.indexOf('://') > 0) {
+        const url = new URL(route.toPath);
+        return {
+            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(url.href.replace(url.origin, ''))),
+            HttpRedirectCode: route.isPermanent ? '301' : '302',
+            Protocol: url.protocol.slice(0, -1),
+            HostName: url.hostname,
+        };
+    } else {
+        return {
             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
-        },
-    }))
-);
+        };
+    }
+};
 
 let params: Params = {};
 
@@ -72,7 +93,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages, program }: GatsbyState = store.getState();
 
-    if(!pluginOptions.hostname != !pluginOptions.protocol) { // If one of these is provided but not the other
+    if (!pluginOptions.hostname !== !pluginOptions.protocol) { // If one of these is provided but not the other
         throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
     }
 
@@ -110,7 +131,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     const temporaryRedirects = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => !redirect.isPermanent);
 
-    let permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
+    const permanentRedirects: GatsbyRedirect[] = redirects.filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => redirect.isPermanent);
 
     if (pluginOptions.generateRoutingRules) {
