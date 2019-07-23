@@ -1,7 +1,7 @@
 import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './constants';
 import fs from 'fs';
 import path from 'path';
-import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
+import { RoutingRule, RoutingRules, Condition, Redirect } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
@@ -23,14 +23,14 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
         },      
     }))
 );
-const buildCondition = (redirectPath: string) => {
+const buildCondition = (redirectPath: string) : Condition => {
     return {
         KeyPrefixEquals: withoutLeadingSlash(redirectPath),
         HttpErrorCodeReturnedEquals: '404',
     };
 };
 
-const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect) => {
+const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect): Redirect => {
     if (route.toPath.indexOf('://') > 0) {
         const url = new URL(route.toPath);
         return {
