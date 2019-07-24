@@ -23,7 +23,7 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
         },      
     }))
 );
-const buildCondition = (redirectPath: string) : Condition => {
+const buildCondition = (redirectPath: string): Condition => {
     return {
         KeyPrefixEquals: withoutLeadingSlash(redirectPath),
         HttpErrorCodeReturnedEquals: '404',
