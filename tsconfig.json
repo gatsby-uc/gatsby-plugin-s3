@@ -2,13 +2,9 @@
     "compilerOptions": {
         "outDir": ".",
         "module": "commonjs",
-        "target": "es5",
+        "target": "es2017",
         "downlevelIteration": true,
-        "lib": [
-            "es6",
-            "dom",
-            "esnext.asynciterable"
-        ],
+        "lib": ["dom", "es2017"],
         "sourceMap": true,
         "allowJs": false,
         "jsx": "react",
