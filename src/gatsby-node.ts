@@ -1,6 +1,7 @@
 import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './constants';
 import fs from 'fs';
 import path from 'path';
+import { URL } from 'url';
 import { RoutingRule, RoutingRules, Condition, Redirect } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
@@ -25,7 +26,7 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
 );
 const buildCondition = (redirectPath: string): Condition => {
     return {
-        KeyPrefixEquals: withoutLeadingSlash(redirectPath)
+        KeyPrefixEquals: withoutLeadingSlash(redirectPath),
     };
 };
 
