@@ -3,6 +3,6 @@ node_js:
   - 10
 before_script:
   - cd examples/with-redirects
-  - npm ci
+  - npm i
   - npm run build && npm run deploy -- -y
   - cd ../..

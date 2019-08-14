@@ -15,7 +15,7 @@ steps:
     versionSpec: '8.x'
   displayName: 'Install Node.js'
 
-- script: npm ci
+- script: npm i
   displayName: 'Install deps'
 
 - script: cd examples\with-redirects && npm ci && npm run build && npm run deploy && cd ..\..
