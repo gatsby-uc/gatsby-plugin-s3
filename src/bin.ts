@@ -120,10 +120,19 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
             config.bucketName = bucket;
         }
 
+        let httpOptions = {};
+        if (process.env.http_proxy) {
+            httpOptions = {
+                agent: proxy(process.env.http_proxy)
+            };
+        }
+
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
+            httpOptions: httpOptions
         });
+
 
         const { exists, region } = await getBucketInfo(config, s3);
 
