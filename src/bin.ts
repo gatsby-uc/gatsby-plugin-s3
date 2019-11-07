@@ -25,7 +25,7 @@ import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 
-const cli = yargs();
+const cli: any = yargs();
 const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
