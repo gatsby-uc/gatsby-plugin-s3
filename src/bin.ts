@@ -84,7 +84,7 @@ const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string |
             .listObjectsV2({
                 Bucket: bucketName,
                 ContinuationToken: token,
-        Prefix: bucketPrefix,
+                Prefix: bucketPrefix,
             })
             .promise();
 
@@ -224,9 +224,9 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
             uploadQueue.push(
                 asyncify(async () => {
                     let key = createSafeS3Key(relative(publicDir, path));
-          if (config.bucketPrefix) {
-            key = `${config.bucketPrefix}/${key}`;
-          }
+                    if (config.bucketPrefix) {
+                        key = `${config.bucketPrefix}/${key}`;
+                    }
                     const readStream = fs.createReadStream(path);
                     const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
                     const data = await streamToPromise(hashStream);
@@ -278,9 +278,9 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
                         key = join(key, 'index.html');
                     }
                     key = createSafeS3Key(key);
-          if (config.bucketPrefix) {
-            key = `${config.bucketPrefix}/${key}`;
-          }
+                    if (config.bucketPrefix) {
+                        key = `${config.bucketPrefix}/${key}`;
+                    }
 
                     const tag = `"${createHash('md5')
                         .update(redirectLocation)
