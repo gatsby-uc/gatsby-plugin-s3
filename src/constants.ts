@@ -75,6 +75,9 @@ export interface PluginOptions {
     // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
+
+    // S3 static webhosting error document name
+    s3StaticWebsiteHostingErrorDocument?: string;
 }
 
 export const DEFAULT_OPTIONS: PluginOptions = {

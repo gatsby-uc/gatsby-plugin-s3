@@ -178,7 +178,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean, bucket: string }) => {
                         Suffix: 'index.html',
                     },
                     ErrorDocument: {
-                        Key: '404.html',
+                        Key: config.s3StaticWebsiteHostingErrorDocument || '404.html',
                     },
                 },
             };
