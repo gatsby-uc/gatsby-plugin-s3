@@ -1,8 +1,7 @@
 import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './constants';
 import fs from 'fs';
 import path from 'path';
-import { URL } from 'url';
-import { RoutingRule, RoutingRules, Condition, Redirect } from 'aws-sdk/clients/s3';
+import { RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
@@ -12,42 +11,60 @@ interface ServerlessRoutingRule {
     RedirectRule: RoutingRule['Redirect'];
 }
 
+// // converts gatsby redirects + rewrites to S3 routing rules
+// // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
+// const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
+//     routes.map(route => ({
+//         Condition: {
+//             ...buildCondition(route.fromPath),
+//         },
+//         Redirect: {
+//             ...buildRedirect(pluginOptions, route),
+//         },      
+//     }))
+// );
+
+// const buildCondition = (redirectPath: string): Condition => {
+//     return {
+//         KeyPrefixEquals: withoutLeadingSlash(redirectPath),
+//     };
+// };
+
+// const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect): Redirect => {
+//     if (route.toPath.indexOf('://') > 0) {
+//         const url = new URL(route.toPath);
+//         return {
+//             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(url.href.replace(url.origin, ''))),
+//             HttpRedirectCode: route.isPermanent ? '301' : '302',
+//             Protocol: url.protocol.slice(0, -1),
+//             HostName: url.hostname,
+//         };
+//     } else {
+//         return {
+//             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
+//             HttpRedirectCode: route.isPermanent ? '301' : '302',
+//             Protocol: pluginOptions.protocol,
+//             HostName: pluginOptions.hostname,
+//         };
+//     }
+// };
+
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules => (
     routes.map(route => ({
         Condition: {
-            ...buildCondition(route.fromPath),
+            KeyPrefixEquals: withoutLeadingSlash(route.fromPath),
+            HttpErrorCodeReturnedEquals: '404',
         },
         Redirect: {
-            ...buildRedirect(pluginOptions, route),
-        },      
-    }))
-);
-const buildCondition = (redirectPath: string): Condition => {
-    return {
-        KeyPrefixEquals: withoutLeadingSlash(redirectPath),
-    };
-};
-
-const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect): Redirect => {
-    if (route.toPath.indexOf('://') > 0) {
-        const url = new URL(route.toPath);
-        return {
-            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(url.href.replace(url.origin, ''))),
-            HttpRedirectCode: route.isPermanent ? '301' : '302',
-            Protocol: url.protocol.slice(0, -1),
-            HostName: url.hostname,
-        };
-    } else {
-        return {
             ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: pluginOptions.protocol,
             HostName: pluginOptions.hostname,
-        };
-    }
-};
+        },      
+    }))
+);
 
 let params: Params = {};
 
