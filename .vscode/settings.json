@@ -1,0 +1,4 @@
+{
+    "jest.autoEnable": false,
+    "editor.rulers": [120]
+}
