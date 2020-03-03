@@ -1,5 +1,6 @@
 import { BucketCannedACL, Types } from 'aws-sdk/clients/s3';
 import path from 'path';
+import { Actions, Page, PluginOptions } from 'gatsby';
 
 export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
@@ -8,11 +9,20 @@ export const CACHE_FILES = {
     redirectObjects: path.join('.cache', 's3.redirectObjects.json'),
 };
 
+export type GatsbyRedirect = Parameters<Actions['createRedirect']>[0];
+
+// @ gatsby maintainers, why is this not typed?
+export interface GatsbyState {
+    redirects: GatsbyRedirect[];
+    pages: Map<string, Page>;
+    program: { directory: string };
+}
+
 export type Params = {
     [k in string]: Partial<Types.PutObjectRequest>;
 };
 
-export interface PluginOptions {
+export interface S3PluginOptions extends PluginOptions {
     // Your bucket name (required)
     bucketName: string;
 
@@ -76,7 +86,7 @@ export interface PluginOptions {
     enableS3StaticWebsiteHosting?: boolean;
 }
 
-export const DEFAULT_OPTIONS: PluginOptions = {
+export const DEFAULT_OPTIONS: S3PluginOptions = {
     bucketName: '',
 
     params: {},
@@ -88,6 +98,9 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     enableS3StaticWebsiteHosting: true,
+
+    // the typing requires this for some reason...
+    plugins: [],
 };
 
 // https://www.gatsbyjs.org/docs/caching/

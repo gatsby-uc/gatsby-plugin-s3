@@ -1,9 +1,10 @@
-import { CACHING_PARAMS, DEFAULT_OPTIONS, Params, PluginOptions } from './constants';
+import { CACHING_PARAMS, DEFAULT_OPTIONS, GatsbyRedirect, GatsbyState, Params, S3PluginOptions } from './constants';
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
 import { Condition, Redirect, RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { GatsbyNode, Page } from 'gatsby';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
 // so we have a separate object with those differing keys which we can throw into the sls config.
@@ -18,7 +19,7 @@ const buildCondition = (redirectPath: string): Condition => {
     };
 };
 
-const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect): Redirect => {
+const buildRedirect = (pluginOptions: S3PluginOptions, route: GatsbyRedirect): Redirect => {
     if (route.toPath.indexOf('://') > 0) {
         const url = new URL(route.toPath);
         return {
@@ -38,7 +39,7 @@ const buildRedirect = (pluginOptions: PluginOptions, route: GatsbyRedirect): Red
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
-const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): RoutingRules =>
+const getRules = (pluginOptions: S3PluginOptions, routes: GatsbyRedirect[]): RoutingRules =>
     routes.map(route => ({
         Condition: {
             ...buildCondition(route.fromPath),
@@ -50,8 +51,7 @@ const getRules = (pluginOptions: PluginOptions, routes: GatsbyRedirect[]): Routi
 
 let params: Params = {};
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const onPreBootstrap = ({ reporter }: any, { bucketName }: PluginOptions) => {
+export const onPreBootstrap: GatsbyNode['createPagesStatefully'] = ({ reporter }, { bucketName }: S3PluginOptions) => {
     if (!bucketName) {
         reporter.panic(`
       "bucketName" is a required option for gatsby-plugin-s3
@@ -63,8 +63,10 @@ export const onPreBootstrap = ({ reporter }: any, { bucketName }: PluginOptions)
     params = {};
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createPagesStatefully = ({ store, actions: { createPage } }: any, userPluginOptions: PluginOptions) => {
+export const createPagesStatefully: GatsbyNode['createPagesStatefully'] = (
+    { store, actions: { createPage } },
+    userPluginOptions?: S3PluginOptions
+) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages }: GatsbyState = store.getState();
 
@@ -77,6 +79,7 @@ export const createPagesStatefully = ({ store, actions: { createPage } }: any, u
                 createPage({
                     path: '/',
                     component: path.join(__dirname, './fake-index.js'),
+                    context: {},
                 });
             }
 
@@ -90,8 +93,7 @@ export const createPagesStatefully = ({ store, actions: { createPage } }: any, u
     }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) => {
+export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOptions: S3PluginOptions) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages, program }: GatsbyState = store.getState();
 
@@ -103,7 +105,7 @@ export const onPostBuild = ({ store }: any, userPluginOptions: PluginOptions) =>
     let rewrites: GatsbyRedirect[] = [];
     if (pluginOptions.generateMatchPathRewrites) {
         rewrites = Array.from(pages.values())
-            .filter((page): page is Required<GatsbyPage> => !!page.matchPath && page.matchPath !== page.path)
+            .filter((page): page is Required<Page> => !!page.matchPath && page.matchPath !== page.path)
             .map(page => ({
                 // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
                 // the syntax that gatsby invented here does not work with routing rules.

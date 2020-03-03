@@ -50,7 +50,7 @@
         "eslint-config-oberon": "^2.0.0",
         "eslint-plugin-jsx-a11y": "^6.2.3",
         "eslint-plugin-react": "^7.18.3",
-        "gatsby": "^2.0.72",
+        "gatsby": "^2.19.27",
         "glob": "^7.1.3",
         "husky": "^2.5.0",
         "jest": "^23.6.0",

@@ -4,7 +4,7 @@ import '@babel/polyfill';
 import 'fs-posix';
 import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs, { Argv } from 'yargs';
-import { CACHE_FILES, Params, PluginOptions } from './constants';
+import { CACHE_FILES, GatsbyRedirect, Params, S3PluginOptions } from './constants';
 import { readJson } from 'fs-extra';
 import klaw from 'klaw';
 import PrettyError from 'pretty-error';
@@ -40,7 +40,7 @@ Promise<T[]> = util.promisify(parallelLimit) as any;
 const guessRegion = (s3: S3, constraint?: string): string | undefined =>
     constraint ?? s3.config.region ?? awsConfig.region;
 
-const getBucketInfo = async (config: PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
+const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
     try {
         const { $response } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
 
@@ -111,7 +111,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
     const uploadQueue: Array<AsyncFunction<void, Error>> = [];
 
     try {
-        const config: PluginOptions = await readJson(CACHE_FILES.config);
+        const config: S3PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
         const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects)
