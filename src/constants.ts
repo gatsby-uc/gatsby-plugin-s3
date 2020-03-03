@@ -1,6 +1,5 @@
-import * as S3 from 'aws-sdk/clients/s3';
+import { BucketCannedACL, Types } from 'aws-sdk/clients/s3';
 import path from 'path';
-import { BucketCannedACL } from 'aws-sdk/clients/s3';
 
 export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
@@ -10,7 +9,7 @@ export const CACHE_FILES = {
 };
 
 export type Params = {
-    [k in string]: Partial<S3.Types.PutObjectRequest>
+    [k in string]: Partial<Types.PutObjectRequest>;
 };
 
 export interface PluginOptions {
