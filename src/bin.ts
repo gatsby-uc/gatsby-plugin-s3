@@ -124,6 +124,9 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean, bucket: string
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
             customUserAgent: userAgent || '',
+            httpOptions: {
+                proxy: process.env.HTTPS_PROXY,
+            },
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
@@ -168,7 +171,9 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean, bucket: string
                     LocationConstraint: config.region,
                 };
             }
+            console.log('Creating bucket', config.bucketName);
             await s3.createBucket(createParams).promise();
+            console.log('Bucket created');
         }
 
         if (config.enableS3StaticWebsiteHosting) {
@@ -188,18 +193,23 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean, bucket: string
                 websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
             }
 
+            console.log('Updating bucket website', config.bucketName);
             await s3.putBucketWebsite(websiteConfig).promise();
+            console.log('Bucket website updated');
         }
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
+        console.log('Listing objects');
         const objects = await listAllObjects(s3, config.bucketName);
+        console.log('Objects listed');
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
         const isKeyInUse: { [objectKey: string]: boolean } = {};
+        console.log('Starting upload');
 
         stream.on('data', async ({ path, stats }) => {
             if (!stats.isFile()) {
@@ -298,6 +308,8 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean, bucket: string
         // tslint:disable-next-line:no-any todo: find out why the typing won't allow this as-is
         await streamToPromise(stream as any as Readable);
         await promisifiedParallelLimit(uploadQueue, 20);
+
+        console.log('Upload complete');
 
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects.map(obj => ({ Key: obj.Key as string }))

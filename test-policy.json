@@ -16,13 +16,26 @@
             }
         },
         {
-            "Sid": "Admin",
+            "Sid": "Admin1",
             "Effect": "Allow",
             "Action": [
                 "s3:GetObject",
                 "s3:DeleteObject"
             ],
-            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*Admin*"
+                }
+            }
+        },
+        {
+            "Sid": "Admin2",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "*",
             "Condition": {
                 "StringLike": {
                     "aws:UserAgent": "*TestPerms*Admin*"

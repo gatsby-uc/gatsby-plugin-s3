@@ -1,19 +1,53 @@
 import fetch from 'node-fetch';
+import * as dotenv from 'dotenv';
 // import { CACHING_PARAMS } from '../constants';
 // import glob from 'glob';
 // import mime from 'mime';
-import { buildSite, deploySite, TARGET_BUCKET, TESTING_ENDPOINT, EnvironmentBoolean, Permission } from './helpers';
+import {
+    generateBucketName,
+    buildSite, deploySite,
+    forceDeleteBucket,
+    cleanupExistingBuckets,
+    EnvironmentBoolean,
+    Permission
+} from './helpers';
 
 jest.setTimeout(30000);
+dotenv.config();
 
-console.debug(`testing using bucket ${TARGET_BUCKET}.`);
+const bucketName = generateBucketName();
+const testingEndpoint = `http://${bucketName}.s3-website-eu-west-1.amazonaws.com`;
+
+console.debug(`Testing using bucket ${bucketName}.`);
+
+beforeAll(async () => {
+    // If a previous test execution failed spectacularly, it's possible the bucket may have been left behind
+    // Here we scan for leftover buckets warn about them/delete them.
+    try {
+        await cleanupExistingBuckets(!!process.env.CLEANUP_TEST_BUCKETS);
+    } catch (err) {
+        console.log('Failed to cleanup leftover buckets!');
+        console.log(err);
+        throw new Error('Failed to cleanup leftover buckets');
+        // Note that even with this failure, Jest continues running tests but the results are unusable!
+        // https://github.com/facebook/jest/issues/2713
+    }
+});
+
+afterAll(async () => {
+    try {
+        await forceDeleteBucket(bucketName);
+    } catch (err) {
+        console.error('Failed to delete bucket after test completion:', bucketName);
+    }
+});
 
 describe('gatsby-plugin-s3', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', {});
+        await buildSite('with-redirects', { TARGET_BUCKET: bucketName });
     });
 
-    test(`IAM policy to enable testing permissions is present`, async () => {
+    test(`IAM policy to enable testing permissions is present and bucket doesn't already exist`, async () => {
         await expect(
             deploySite(
                 'with-redirects',
@@ -26,23 +60,25 @@ describe('gatsby-plugin-s3', () => {
         ).rejects.toThrow();
     });
 
-    it(`can create a bucket if it doesn't already exist`, async () => {
-        await deploySite(
-            'with-redirects',
-            [
-                Permission.PutObject,
-                Permission.PutObjectAcl,
-                Permission.CreateBucket,
-                Permission.PutBucketAcl,
-                Permission.PutBucketWebsite,
-            ]
+    test(`can create a bucket if it doesn't already exist`, async () => {
+        await expect(
+            await deploySite(
+                'with-redirects',
+                [
+                    Permission.PutObject,
+                    Permission.PutObjectAcl,
+                    Permission.CreateBucket,
+                    Permission.PutBucketAcl,
+                    Permission.PutBucketWebsite,
+                ]
+            )
         );
     });
 });
 
 describe('object-based redirects', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', { LEGACY_REDIRECTS: EnvironmentBoolean.False });
+        await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.False });
         await deploySite(
             'with-redirects',
             [
@@ -55,15 +91,15 @@ describe('object-based redirects', () => {
     });
 
     test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/trailing-slash/', { redirect: 'manual' });
+        const response = await fetch(testingEndpoint + '/trailing-slash/', { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/trailing-slash/1');
+        expect(response.headers.get('location')).toBe(testingEndpoint + '/trailing-slash/1');
     });
 });
 
 describe('rules-based redirects', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', { LEGACY_REDIRECTS: EnvironmentBoolean.True });
+        await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.True });
         await deploySite(
             'with-redirects',
             [
@@ -76,8 +112,8 @@ describe('rules-based redirects', () => {
     });
 
     test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/trailing-slash/', { redirect: 'manual' });
+        const response = await fetch(testingEndpoint + '/trailing-slash/', { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/trailing-slash/1');
+        expect(response.headers.get('location')).toBe(testingEndpoint + '/trailing-slash/1');
     });
 });

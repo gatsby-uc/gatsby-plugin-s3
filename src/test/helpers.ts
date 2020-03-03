@@ -1,20 +1,25 @@
+import crypto from 'crypto';
 import path from 'path';
 import { fork } from 'child_process';
 import { Readable } from 'stream';
-import * as dotenv from 'dotenv';
-// import S3, { NextToken } from 'aws-sdk/clients/s3';
+import S3, { NextToken } from 'aws-sdk/clients/s3';
 
-dotenv.config();
-export const { TARGET_BUCKET, TESTING_ENDPOINT } = process.env;
+const bucketPrefix = 'gatsby-plugin-s3-tests-';
+const bucketRandomCharacters = 12; // Must be an even number
+const considerBucketsLeftoverIfOlderThan = 1000 * 60 * 60 * 1; // 1 hour
 
 export enum EnvironmentBoolean {
     False = '',
     True = 'true',
 }
 
-/*const s3 = new S3({
-    customUserAgent: "TestPerms/Admin"
-});*/
+const s3 = new S3({
+    region: 'eu-west-1',
+    customUserAgent: 'TestPerms/Admin',
+    httpOptions: {
+        proxy: process.env.HTTPS_PROXY,
+    },
+});
 
 /**
  * Permissions to request from IAM when using the included policy for the test runner
@@ -29,24 +34,27 @@ export enum Permission {
     PutBucketAcl = 'PutBucketAcl',
 }
 
+export const generateBucketName = () => {
+    return bucketPrefix + crypto.randomBytes(bucketRandomCharacters / 2).toString('hex');
+};
+
 export const runScript = (cwd: string, script: string, args: string[], env: NodeJS.ProcessEnv) => {
-    return new Promise<{exitCode: number, stdout: string, stderr: string}>((resolve, reject) => {
+    return new Promise<{exitCode: number, output: string}>((resolve, reject) => {
         const proc = fork(script, args, { env: Object.assign({}, process.env, env), cwd, stdio: 'pipe' });
 
         let running = true;
-        let stdout = '';
-        const stderr = '';
+        let output = '';
 
         (proc.stdout as Readable).on('data', (chunk: Buffer) => {
             const str = chunk.toString();
             console.log(str);
-            stdout += str;
+            output += str;
         });
 
         (proc.stderr as Readable).on('data', (chunk: Buffer) => {
             const str = chunk.toString();
-            console.error(str);
-            stdout += str;
+            console.log(str);
+            output += str;
         });
 
         proc.once('error', (err) => {
@@ -60,7 +68,7 @@ export const runScript = (cwd: string, script: string, args: string[], env: Node
             if (running) {
                 running = false;
                 if (exitCode !== null) {
-                    resolve({ exitCode, stdout, stderr });
+                    resolve({ exitCode, output });
                 } else {
                     // If exitCode is null signal will be non-null
                     // https://nodejs.org/api/child_process.html#child_process_event_exit
@@ -83,7 +91,7 @@ export const buildSite = async (site: string, env: NodeJS.ProcessEnv): Promise<s
     }
     console.debug(`built site ${site}.`);
 
-    return output.stdout;
+    return output.output;
 };
 
 export const deploySite = async (site: string, additionalPermissions: Permission[]): Promise<string> => {
@@ -100,9 +108,64 @@ export const deploySite = async (site: string, additionalPermissions: Permission
     );
 
     if (output.exitCode) {
-        throw new Error(`Failed to deploy site ${site}, exited with error code ${output.exitCode}`);
+        throw new Error(
+`Failed to deploy site ${site}, exited with error \
+code ${output.exitCode} and the following output:\n${output.output}`
+        );
     }
     console.debug(`deployed site ${site}.`);
 
-    return output.stdout;
+    return output.output;
+};
+
+export const cleanupExistingBuckets = async (deleteBuckets: boolean): Promise<void> => {
+    const buckets = (await s3.listBuckets().promise()).Buckets;
+    if (buckets) {
+        const bucketsToDelete = buckets
+            .filter(
+                b => !b.CreationDate ||
+                     b.CreationDate.valueOf() + considerBucketsLeftoverIfOlderThan < Date.now().valueOf()
+            )
+            .map(b => b.Name as string)
+            .filter(n => n.startsWith(bucketPrefix));
+        
+        if (bucketsToDelete.length > 0) {
+            if (deleteBuckets) {
+                console.log('Deleting leftover test buckets:', bucketsToDelete);
+                await Promise.all(bucketsToDelete.map(n => forceDeleteBucket(n)));
+            } else {
+                console.log('Detected leftover test buckets');
+                console.log('Set environment variable CLEANUP_TEST_BUCKETS to 1 to remove:', bucketsToDelete);
+            }
+        }
+    }
+};
+
+export const emptyBucket = async (bucketName: string): Promise<void> => {
+    let token: NextToken | undefined;
+    do {
+        const response = await s3.listObjectsV2({
+            Bucket: bucketName,
+            ContinuationToken: token,
+        }).promise();
+
+        if (response.Contents && response.Contents.length > 0) {
+            await s3.deleteObjects({
+                Bucket: bucketName,
+                Delete: {
+                    Objects: response.Contents.map(o => ({ Key: o.Key as string })),
+                },
+            }).promise();
+        }
+
+        token = response.NextContinuationToken;
+    } while (token);
+};
+
+export const forceDeleteBucket = async (bucketName: string): Promise<void> => {
+    await emptyBucket(bucketName);
+
+    await s3.deleteBucket({
+        Bucket: bucketName,
+    }).promise();
 };

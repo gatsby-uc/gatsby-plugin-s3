@@ -76,3 +76,6 @@ jspm_packages/
 /*.js.map
 
 /test/
+
+junit.xml
+/reports/
