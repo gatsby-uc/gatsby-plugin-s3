@@ -16,11 +16,11 @@ jobs:
       - run:
           name: install-dependencies
           # Install dependencies only if they couldn't be restored from the cache
-          command: 'npm ci'
+          command: 'npm ci --dev'
       - run:
           name: install-example-dependencies
           # Install dependencies only if they couldn't be restored from the cache
-          command: 'cd examples/with-redirects && npm ci'
+          command: 'cd examples/with-redirects && npm ci --dev && cd ../..'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
@@ -36,7 +36,7 @@ jobs:
           at: .
       - run:
           name: lint
-          command: tslint --format junit --o reports/linter-results.xml
+          command: eslint -f junit -o reports/linter-results.xml
       - store_artifacts:
           prefix: tests
           path: "./reports"
