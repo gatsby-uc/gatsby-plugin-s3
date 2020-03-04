@@ -12,73 +12,75 @@ jobs:
     steps:
       - checkout
       - run:
-        name: verify-lock
-        command: 'npm ls' # This will throw an error if package-lock.json doesn't satisfy package.json
+          name: verify-lock
+          command: 'npm ls' # This will throw an error if package-lock.json doesn't satisfy package.json
       - restore_cache:
-        key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-        name: install-dependencies
-        command: '[! -d "./node_modules/"] && npm ci' # Install dependencies only if they couldn't be restored from the cache
+          name: install-dependencies
+          # Install dependencies only if they couldn't be restored from the cache
+          command: '[! -d "./node_modules/"] && npm ci'
       - save_cache:
-        key: dependency-cache-{{ checksum "package-lock.json" }}
-        paths:
-          - ./node_modules
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ./node_modules
       - persist_to_workspace:
-        root: .
-        paths:
-          - .
+          root: .
+          paths:
+            - .
   lint:
     executor: node
     steps:
       - attach_workspace:
-        at: .
+          at: .
       - run:
-        name: lint
-        command: tslint --format junit --o reports/linter-results.xml
+          name: lint
+          command: tslint --format junit --o reports/linter-results.xml
       - store_artifacts:
-        prefix: tests
-        path: "./reports"
+          prefix: tests
+          path: "./reports"
       - store_test_results:
-        path: "./reports"
+          path: "./reports"
 
   build:
     executor: node
     steps:
       - attach_workspace:
-        at: .
+          at: .
       - run:
-        name: build
-        command: npm run-script build
+          name: build
+          command: npm run-script build
       - persist_to_workspace:
-        root: .
-        paths:
-          - .
-  test-e2e:
+          root: .
+          paths:
+            - .
+  test_e2e:
     executor: node
     steps:
       - attach_workspace:
-        at: .
+          at: .
       - run:
-        name: e2e-tests
-        command: jest --ci --runInBand --reporters=default --reporters=jest-junit
-        environment:
-          JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
+          name: e2e-tests
+          command: jest --ci --runInBand --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
       - store_artifacts:
-        prefix: tests
-        path: "./reports"
+          prefix: tests
+          path: "./reports"
       - store_test_results:
-        path: "./reports"
+          path: "./reports"
 
 workflows:
+  version: 2.1
   main:
     jobs:
       - install
-      - lint
-        requires:
-          - install
-      - build
-        requires:
-          - install
-      - test-e2e
-        requires:
-          - build
+      - lint:
+          requires:
+            - install
+      - build:
+          requires:
+            - install
+      - test_e2e:
+          requires:
+            - build
