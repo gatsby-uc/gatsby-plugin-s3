@@ -1,6 +1,6 @@
-import * as S3 from 'aws-sdk/clients/s3';
+import { BucketCannedACL, Types } from 'aws-sdk/clients/s3';
 import path from 'path';
-import { BucketCannedACL } from 'aws-sdk/clients/s3';
+import { Actions, Page, PluginOptions } from 'gatsby';
 
 export const CACHE_FILES = {
     config: path.join('.cache', 's3.config.json'),
@@ -9,11 +9,20 @@ export const CACHE_FILES = {
     redirectObjects: path.join('.cache', 's3.redirectObjects.json'),
 };
 
+export type GatsbyRedirect = Parameters<Actions['createRedirect']>[0];
+
+// @ gatsby maintainers, why is this not typed?
+export interface GatsbyState {
+    redirects: GatsbyRedirect[];
+    pages: Map<string, Page>;
+    program: { directory: string };
+}
+
 export type Params = {
-    [k in string]: Partial<S3.Types.PutObjectRequest>
+    [k in string]: Partial<Types.PutObjectRequest>;
 };
 
-export interface PluginOptions {
+export interface S3PluginOptions extends PluginOptions {
     // Your bucket name (required)
     bucketName: string;
 
@@ -33,7 +42,7 @@ export interface PluginOptions {
     // see all available params here:
     // https://github.com/aws/aws-sdk-js/blob/83ebfbcc6ab30b9a486b15cdede26a1bd03c72e4/clients/s3.d.ts#L3573
     // @example:
-    // { '/static/**': {
+    // { 'static/**': {
     //     CacheControl: 'public, max-age=31536000, immutable'
     // },
     params?: Params;
@@ -77,7 +86,7 @@ export interface PluginOptions {
     enableS3StaticWebsiteHosting?: boolean;
 }
 
-export const DEFAULT_OPTIONS: PluginOptions = {
+export const DEFAULT_OPTIONS: S3PluginOptions = {
     bucketName: '',
 
     params: {},
@@ -89,6 +98,9 @@ export const DEFAULT_OPTIONS: PluginOptions = {
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     enableS3StaticWebsiteHosting: true,
+
+    // the typing requires this for some reason...
+    plugins: [],
 };
 
 // https://www.gatsbyjs.org/docs/caching/
