@@ -4,7 +4,7 @@ executors:
   node:
     docker:
       - image: circleci/node:4.8.2
-    working_directory: /tmp
+    working_directory: /tmp/gatsby-plugin-s3
 
 jobs:
   install:
