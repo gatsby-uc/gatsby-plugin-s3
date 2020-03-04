@@ -24,6 +24,7 @@ import { createHash } from 'crypto';
 import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
+import proxy from 'proxy-agent';
 
 const cli = yargs();
 const pe = new PrettyError();
@@ -123,9 +124,17 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
             config.bucketName = bucket;
         }
 
+        let httpOptions = {};
+        if (process.env.HTTP_PROXY) {
+            httpOptions = {
+                agent: proxy(process.env.HTTP_PROXY),
+            };
+        }
+
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
+            httpOptions,
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
