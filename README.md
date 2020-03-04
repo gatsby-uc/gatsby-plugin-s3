@@ -4,7 +4,7 @@
 [![](https://img.shields.io/travis/jariz/gatsby-plugin-s3/master.svg?label=unix&style=flat&logo=travis)](https://travis-ci.org/jariz/gatsby-plugin-s3)
 [![](https://img.shields.io/azure-devops/build/jarizw/jarizw/1.svg?label=windows&style=flat&logo=azuredevops)](https://dev.azure.com/jarizw/jarizw/_build?definitionId=1)
 
-![](https://jari.lol/KCB4gNo4Xg.gif)  
+![](https://jari.lol/KCB4gNo4Xg.gif)
 
 Enables you to deploy your gatsby site to a S3 bucket.  
 Requires very little configuration, while optimizing your site as much as possible.
@@ -47,7 +47,7 @@ Add a deployment script to your `package.json`
 }
 ```
 
-Optionally you can skip the confirmation prompt automatically by adding `--yes` like so:  
+Optionally you can skip the confirmation prompt automatically by adding `--yes` like so:
 ```js
     "deploy": "gatsby-plugin-s3 deploy --yes"
 ```
@@ -78,7 +78,7 @@ Additionally, these can be set in a local `.env` file too, but this requires a b
 
 ## Configuration
 Most of the aspects of the plugin can be configured.  
-Default configuration is as follows:  
+Default configuration is as follows:
 
 ```typescript
 {
@@ -98,7 +98,7 @@ Default configuration is as follows:
 };
 ```
 
-Read the full spec with explanation of each field here:  
+Read the full spec with explanation of each field here:
 
 https://github.com/jariz/gatsby-plugin-s3/blob/master/src/constants.ts#L15-L60
 
@@ -117,14 +117,14 @@ Additionally setup a different bucket name depending on your environment.
 
 Learn how to override the content type gatsby-plugin-s3 sets on your files.
 
-- [See the recipe](recipes/custom-content-type.md) 
+- [See the recipe](recipes/custom-content-type.md)
 
 
 ### Using CloudFront with gatsby-plugin-s3
 
-CloudFront is a global CDN and can be used to make your blazing fast Gatsby site load even faster, particularly for first-time visitors. Additionally, CloudFront provides the easiest way to give your S3 bucket a custom domain name and HTTPS support.  
+CloudFront is a global CDN and can be used to make your blazing fast Gatsby site load even faster, particularly for first-time visitors. Additionally, CloudFront provides the easiest way to give your S3 bucket a custom domain name and HTTPS support.
 
-- [See the recipe](recipes/with-cloudfront.md) 
+- [See the recipe](recipes/with-cloudfront.md)
 
 ### Using serverless with gatsby-plugin-s3
 
@@ -133,8 +133,14 @@ Serverless will give you the added advantage of being able to add multiple AWS s
 
 - [See the recipe](recipes/with-serverless.md)  
 Bare bones implementation details on how to set up serverless & gatsby-plugin-s3
-- [See the `with-serverless` example](examples/with-serverless)  
+- [See the `with-serverless` example](examples/with-serverless)
 
+
+### Using a proxy
+
+Routing traffic from gatsby-plugin-s3 during the deployment through a http proxy can be done with a env var.
+
+- [See the recipe](recipes/with-proxy.md)
 
 ### Using Yandex S3 or any AWS supported services with gatsby-plugin-s3
 
@@ -151,11 +157,11 @@ Yandex example:
 ### Deploying your gatsby site under a prefix in your bucket
 
 You can deploy your site to a prefix, leaving all other data in the bucket intact.  
-`gatsby-plugin-s3` respects the `pathPrefix` gatsby option with no additional setup needed for this plugin, so you can [follow the guide in the gatsby docs.](https://www.gatsbyjs.org/docs/path-prefix/) 
+`gatsby-plugin-s3` respects the `pathPrefix` gatsby option with no additional setup needed for this plugin, so you can [follow the guide in the gatsby docs.](https://www.gatsbyjs.org/docs/path-prefix/)
 
 ### AWS S3 Routing Rules Limit
 
-AWS S3 has an undocumented limit on the number of Routing Rules that can be applied to a bucket.  Unfortunately this limits 
-the number of 302 (temporary) redirects you can create.  For 301 (permanent) redirects, a way to get around the limit is 
+AWS S3 has an undocumented limit on the number of Routing Rules that can be applied to a bucket.  Unfortunately this limits
+the number of 302 (temporary) redirects you can create.  For 301 (permanent) redirects, a way to get around the limit is
 [setting the `x-amz-website-redirect-location` header on an empty object](https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html).
 To enable this behavior, set the `generateRedirectObjectsForPermanentRedirects` configuration option to `true`.

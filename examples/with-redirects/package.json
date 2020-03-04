@@ -4,6 +4,7 @@
     "version": "1.0.0",
     "author": "Kyle Mathews <mathews.kyle@gmail.com>",
     "dependencies": {
+        "dotenv": "^8.2.0",
         "gatsby": "^2.13.61",
         "gatsby-plugin-create-client-paths": "^2.0.3",
         "gatsby-plugin-offline": "^2.0.23",
@@ -21,7 +22,7 @@
         "develop": "gatsby develop",
         "start": "npm run develop",
         "format": "prettier --write \"src/**/*.js\"",
-        "deploy": "node ../../bin.js deploy",
+        "deploy": "gatsby-plugin-s3 deploy",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
