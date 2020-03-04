@@ -105,7 +105,7 @@ const createSafeS3Key = (key: string): string => {
 };
 
 const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
-    const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta' }).start();
+    const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
 
     const uploadQueue: Array<AsyncFunction<void, Error>> = [];
