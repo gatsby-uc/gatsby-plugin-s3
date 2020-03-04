@@ -3,7 +3,7 @@ version: 2.1
 executors:
   node:
     docker:
-      - image: circleci/node:4.8.2
+      - image: circleci/node:12.16
     working_directory: /tmp/gatsby-plugin-s3
 
 jobs:
@@ -11,17 +11,18 @@ jobs:
     executor: node
     steps:
       - checkout
-      - run:
-          name: verify-lock
-          command: 'npm ls' # This will throw an error if package-lock.json doesn't satisfy package.json
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
           name: install-dependencies
           # Install dependencies only if they couldn't be restored from the cache
-          command: '[! -d "./node_modules/"] && npm ci'
+          command: 'npm ci'
+      - run:
+          name: install-example-dependencies
+          # Install dependencies only if they couldn't be restored from the cache
+          command: 'cd examples/with-redirects && npm ci'
       - save_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
             - ./node_modules
       - persist_to_workspace:
