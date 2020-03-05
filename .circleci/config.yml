@@ -62,7 +62,7 @@ jobs:
           at: .
       - run:
           name: e2e-tests
-          command: jest --ci --runInBand --reporters=default --reporters=jest-junit
+          command: npm run-script test:e2e
           environment:
             JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
       - store_artifacts:
