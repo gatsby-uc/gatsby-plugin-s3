@@ -8,6 +8,7 @@ jobs:
       name: node/default
     steps:
       - checkout
+          path: ~/project
       - node/with-cache:
           steps:
             - run: npm ci
