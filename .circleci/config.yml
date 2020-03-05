@@ -7,7 +7,7 @@ jobs:
     executor:
       name: node/default
     steps:
-      - checkout
+      - checkout:
           path: ~/project
       - node/with-cache:
           steps:
