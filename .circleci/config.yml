@@ -1,0 +1,23 @@
+version: 2.1
+orbs:
+  node: circleci/node@1.1.6
+jobs:
+  deploy-docs:
+    working_directory: ~/project/docs
+    executor:
+      name: node/default
+    steps:
+      - checkout:
+          path: ~/project
+      - node/with-cache:
+          steps:
+            - run: npm ci
+            - run:
+                command: npm ci
+                working_directory: ~/project/docs/.awesome
+            - run: npm run build
+            - run: npm run deploy
+workflows:
+    build-and-test:
+      jobs:
+        - deploy-docs
