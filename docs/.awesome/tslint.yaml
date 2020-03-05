@@ -1,0 +1,38 @@
+---
+defaultSeverity: error
+extends:
+  - tslint:recommended
+jsRules:
+rules:
+  curly:
+    - true
+    - ignore-same-line
+  max-line-length: false
+  member-ordering: false
+  no-arg: true
+  no-consecutive-blank-lines:
+    - true
+    - 2
+  no-console:
+    severity: warning
+    options:
+      - debug
+      - info
+      - log
+      - time
+      - timeEnd
+      - trace
+  no-empty:  false
+  no-namespace: false
+  no-reference: false
+  object-literal-sort-keys: false
+  object-literal-key-quotes:
+    - true
+    - as-needed
+  prefer-const: false
+  variable-name:
+    - true
+    - ban-keywords
+    - check-format
+    - allow-leading-underscore
+    - allow-pascal-case

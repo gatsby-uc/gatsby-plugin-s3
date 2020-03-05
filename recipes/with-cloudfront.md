@@ -1,10 +1,9 @@
-# Using CloudFront with gatsby-plugin-s3
+---
+title: Using CloudFront with gatsby-plugin-s3
+description: CloudFront is a global CDN and can be used to make your blazing fast Gatsby site load even faster, particularly for first-time visitors. Additionally, CloudFront provides the easiest way to give your S3 bucket a custom domain name and HTTPS support.
+---
 
 *Written by @JoshuaWalsh*
-
-CloudFront is a global CDN and can be used to make your blazing fast Gatsby site load *even faster*, particularly for first-time visitors. Additionally, CloudFront provides the easiest way to give your S3 bucket a custom domain name and HTTPS support.
-
-There are a couple of things that you need to be consider when using gatsby-plugin-s3 to deploy a site which uses CloudFront.
 
 ## CloudFront setup
 

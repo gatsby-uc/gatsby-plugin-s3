@@ -1,6 +1,8 @@
-## Routing deployment through a proxy
+---
+title: Routing deployment through a proxy
+description: Using gatsby-plugin-s3 together with a proxy is supported out of the box and setup is trivial.
+---
 
-Using `gatsby-plugin-s3` together with a proxy is supported out of the box and setup is trivial.  
 Either:
 
 Prepend the following to your deploy script:
