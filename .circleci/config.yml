@@ -12,6 +12,9 @@ jobs:
       - node/with-cache:
           steps:
             - run: npm ci
+            - run:
+                command: npm ci
+                working_directory: ~/project/docs/.awesome
             - run: npm run build
             - run: npm run deploy
 workflows:
