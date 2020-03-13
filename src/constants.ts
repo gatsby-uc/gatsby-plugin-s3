@@ -86,7 +86,6 @@ export interface S3PluginOptions extends PluginOptions {
     enableS3StaticWebsiteHosting?: boolean;
 
     // Max number of files to upload in parallel.
-    // This value should not exceed the maximum number of open files supported by the system.
     parallelLimit?: number;
 }
 
