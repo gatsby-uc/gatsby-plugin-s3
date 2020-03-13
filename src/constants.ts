@@ -84,6 +84,10 @@ export interface S3PluginOptions extends PluginOptions {
     // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
+
+    // Max number of files to upload in parallel.
+    // This value should not exceed the maximum number of open files supported by the system.
+    parallelLimit?: number;
 }
 
 export const DEFAULT_OPTIONS: S3PluginOptions = {

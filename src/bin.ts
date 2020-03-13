@@ -315,7 +315,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
         );
 
         await streamToPromise(stream as Readable);
-        await promisifiedParallelLimit(uploadQueue, 20);
+        await promisifiedParallelLimit(uploadQueue, config.parallelLimit ? config.parallelLimit : 20);
 
         if (config.removeNonexistentObjects) {
             const objectsToRemove = objects
