@@ -36,7 +36,7 @@ jobs:
           at: .
       - run:
           name: lint
-          command: eslint -f junit -o reports/linter-results.xml
+          command: ./node_modules/.bin/eslint -f junit -o reports/linter-results.xml
       - store_artifacts:
           prefix: tests
           path: "./reports"
