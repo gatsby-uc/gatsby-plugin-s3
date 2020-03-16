@@ -14,13 +14,13 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: install-dependencies
-          # Install dependencies only if they couldn't be restored from the cache
-          command: 'npm ci --dev'
-      - run:
           name: install-example-dependencies
-          # Install dependencies only if they couldn't be restored from the cache
           command: 'cd examples/with-redirects && npm ci --dev && cd ../..'
+      - run:
+          name: install-dependencies
+          # I have no idea why, but if we run `npm ci` for examples dependencies after this one then it erases
+          # some of the dependencies.
+          command: 'npm ci --dev'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
@@ -36,7 +36,7 @@ jobs:
           at: .
       - run:
           name: lint
-          command: ./node_modules/.bin/eslint -f junit -o reports/linter-results.xml
+          command: ./node_modules/.bin/eslint "src/**.ts" -f junit -o reports/linter-results.xml
       - store_artifacts:
           prefix: tests
           path: "./reports"
