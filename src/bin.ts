@@ -279,7 +279,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
                     }
                     key = createSafeS3Key(key);
                     if (config.bucketPrefix) {
-                        key = `${config.bucketPrefix}/${key}`;
+                        key = withoutLeadingSlash(`${config.bucketPrefix}/${key}`);
                     }
 
                     const tag = `"${createHash('md5')
