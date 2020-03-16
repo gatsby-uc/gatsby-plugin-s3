@@ -91,7 +91,8 @@ Default configuration is as follows:
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     customAwsEndpointHostname: undefined,
-    enableS3StaticWebsiteHosting: true
+    enableS3StaticWebsiteHosting: true,
+    parallelLimit: 20,
 };
 ```
 
