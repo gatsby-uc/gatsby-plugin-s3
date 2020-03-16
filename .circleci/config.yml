@@ -14,12 +14,16 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
+          name: install-dependencies
+          command: 'npm ci --dev'
+      - run:
           name: install-example-dependencies
           command: 'cd examples/with-redirects && npm ci --dev && cd ../..'
       - run:
-          name: install-dependencies
-          # I have no idea why, but if we run `npm ci` for examples dependencies after this one then it erases
-          # some of the dependencies.
+          name: install-dependencies-again
+          # Not sure why, but for some reason installing the example dependencies uninstalls some of the main package dependencies
+          # Also not sure why, but for some reason installing example dependencies fails if the main package dependencies aren't already installed
+          # So we have to install the main package dependencies twice
           command: 'npm ci --dev'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
