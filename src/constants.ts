@@ -101,6 +101,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     enableS3StaticWebsiteHosting: true,
+    parallelLimit: 20,
 
     // the typing requires this for some reason...
     plugins: [],
