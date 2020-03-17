@@ -62,17 +62,14 @@ describe('gatsby-plugin-s3', () => {
 
     test(`can create a bucket if it doesn't already exist`, async () => {
         await expect(
-            await deploySite(
-                'with-redirects',
-                [
-                    Permission.PutObject,
-                    Permission.PutObjectAcl,
-                    Permission.CreateBucket,
-                    Permission.PutBucketAcl,
-                    Permission.PutBucketWebsite,
-                ]
-            )
-        );
+            deploySite('with-redirects', [
+                Permission.PutObject,
+                Permission.PutObjectAcl,
+                Permission.CreateBucket,
+                Permission.PutBucketAcl,
+                Permission.PutBucketWebsite,
+            ])
+        ).resolves.toBeTruthy();
     });
 });
 
