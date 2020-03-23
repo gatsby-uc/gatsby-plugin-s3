@@ -1,3 +1,4 @@
+export const identity = <T>(x: T) => x;
 export const withoutLeadingSlash = (s: string) => (s.startsWith('/') ? s.substring(1) : s);
 export const withoutTrailingSlash = (s: string) => (s.endsWith('/') ? s.substring(0, s.length - 1) : s);
 export const withTrailingSlash = (s: string) => (s.endsWith('/') ? s : `${s}/`);
