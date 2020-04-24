@@ -114,6 +114,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
     try {
         const config: S3PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
+        const metadata: Params = await readJson(CACHE_FILES.metadata);
         const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
         const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects)
             ? await readJson(CACHE_FILES.redirectObjects)
@@ -242,7 +243,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
                                     Body: fs.createReadStream(path),
                                     ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
                                     ContentType: mime.getType(path) ?? 'application/octet-stream',
-                                    ...getParams(key, params),
+                                    ...getParams(key, { ...params, ...metadata }),
                                 },
                             });
 
@@ -297,7 +298,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
                                 ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
                                 ContentType: 'application/octet-stream',
                                 WebsiteRedirectLocation: redirectLocation,
-                                ...getParams(key, params),
+                                ...getParams(key, { ...params, ...metadata }),
                             },
                         });
 
