@@ -79,3 +79,8 @@ jspm_packages/
 
 junit.xml
 /reports/
+
+/test-infrastructure/.terraform*
+/test-infrastructure/artifacts
+/test-infrastructure/terraform.tfstate
+/test-infrastructure/terraform.tfstate*

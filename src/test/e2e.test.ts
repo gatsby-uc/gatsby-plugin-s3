@@ -23,14 +23,16 @@ console.debug(`Testing using bucket ${bucketName}.`);
 beforeAll(async () => {
     // If a previous test execution failed spectacularly, it's possible the bucket may have been left behind
     // Here we scan for leftover buckets warn about them/delete them.
-    try {
-        await cleanupExistingBuckets(!!process.env.CLEANUP_TEST_BUCKETS);
-    } catch (err) {
-        console.log('Failed to cleanup leftover buckets!');
-        console.log(err);
-        throw new Error('Failed to cleanup leftover buckets');
-        // Note that even with this failure, Jest continues running tests but the results are unusable!
-        // https://github.com/facebook/jest/issues/2713
+    if (!process.env.SKIP_BUCKET_CLEANUP) {
+        try {
+            await cleanupExistingBuckets(!!process.env.CLEANUP_TEST_BUCKETS);
+        } catch (err) {
+            console.error('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!');
+            console.error(err);
+            throw new Error('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!');
+            // Note that even with this failure, Jest continues running tests but the results are unusable!
+            // https://github.com/facebook/jest/issues/2713
+        }
     }
 });
 

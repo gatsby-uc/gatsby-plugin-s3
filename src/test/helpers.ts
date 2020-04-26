@@ -4,9 +4,11 @@ import { fork } from 'child_process';
 import { Readable } from 'stream';
 import S3, { NextToken } from 'aws-sdk/clients/s3';
 
+// IMPORTANT: Must match what's in test-infrastructure/template.tf
 const bucketPrefix = 'gatsby-plugin-s3-tests-';
 const bucketRandomCharacters = 12; // Must be an even number
 const considerBucketsLeftoverIfOlderThan = 1000 * 60 * 60 * 1; // 1 hour
+const region = 'eu-west-1';
 
 export enum EnvironmentBoolean {
     False = '',
@@ -14,7 +16,7 @@ export enum EnvironmentBoolean {
 }
 
 const s3 = new S3({
-    region: 'eu-west-1',
+    region,
     customUserAgent: 'TestPerms/Admin',
     httpOptions: {
         proxy: process.env.HTTPS_PROXY,

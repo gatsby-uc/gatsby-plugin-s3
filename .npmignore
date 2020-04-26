@@ -3,5 +3,6 @@ recipes/
 src/
 typings/
 test/
+test-infrastructure/
 .idea/
 .env
