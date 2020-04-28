@@ -61,6 +61,8 @@ jobs:
             - .
   test_e2e:
     executor: node
+    environment:
+      SKIP_BUCKET_CLEANUP: 1
     steps:
       - attach_workspace:
           at: .
