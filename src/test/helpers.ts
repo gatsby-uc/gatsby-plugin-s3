@@ -49,6 +49,7 @@ export const runScript = (cwd: string, script: string, args: string[], env: Node
 
         (proc.stdout as Readable).on('data', (chunk: Buffer) => {
             const str = chunk.toString();
+            console.log(str);
             output += str;
         });
 
