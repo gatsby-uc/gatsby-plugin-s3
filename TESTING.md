@@ -13,20 +13,23 @@ sure you've added it to your PATH.
 
 3. Run `terraform init` to install dependencies.
 
-4. Run `terraform apply` to deploy the required infrastructure.
+4. Configure Terraform to be able to deploy to your AWS account using one of the methods specified
+[here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
 
-5. If you don't already have one, create a `.env` file in the root directory of the project. This file is mentioned in
+5. Run `terraform apply` to deploy the required infrastructure.
+
+6. If you don't already have one, create a `.env` file in the root directory of the project. This file is mentioned in
 `.gitignore` so it will not be committed to Git.
 
-6. Add a line to `.env` starting with `AWS_ACCESS_KEY_ID=` and followed by the value of the test_user_access_key_id
+7. Add a line to `.env` starting with `AWS_ACCESS_KEY_ID=` and followed by the value of the test_user_access_key_id
 output from `terraform apply`.
 
-7. Add a line to `.env` starting with `AWS_SECRET_ACCESS_KEY=` and followed by the value of the
+8. Add a line to `.env` starting with `AWS_SECRET_ACCESS_KEY=` and followed by the value of the
 test_user_secret_access_key output. (This output is marked as sensitive. To view it's value you can run
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the `test-infrastructure/terraform.tfstate` file.)
 
-8. In order to run the tests, run `npm run test:e2e` in the root directory of the project. 
+9. In order to run the tests, run `npm run test:e2e` in the root directory of the project. 
 
 ## Setup for Continuous Integration / maintainers
 
@@ -48,24 +51,27 @@ sure you've added it to your PATH.
 
 3. Run `terraform init` to install dependencies.
 
-4. Run `terraform apply -var 'bucket_deletion_period=60'` to deploy the required infrastructure. Change the `60` to
+4. Configure Terraform to be able to deploy to your AWS account using one of the methods specified
+[here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
+
+5. Run `terraform apply -var 'bucket_deletion_period=60'` to deploy the required infrastructure. Change the `60` to
 how often you'd like the cleanup script to run, in minutes.
 
-5. Configure your CI environment's `AWS_ACCESS_KEY_ID` environment variable to the value of the
+6. Configure your CI environment's `AWS_ACCESS_KEY_ID` environment variable to the value of the
 test_user_access_key_id output.
 
-6. Configure your CI environment's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
+7. Configure your CI environment's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
 test_user_secret_access_key output. (This output is marked as sensitive. To view it's value you can run
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
-7. Configure your CI environment's `SKIP_BUCKET_CLEANUP` environment variable to `1`. This disables the leftover bucket
+8. Configure your CI environment's `SKIP_BUCKET_CLEANUP` environment variable to `1`. This disables the leftover bucket
 check that runs before each test run, which you no longer need because you have the Lambda script.
 
-8. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
-as you used in step 4 to apply the update.
+9. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+as you used in step 5 to apply the update.
 
-If you would like to run the tests locally as well as in CI, you can put the same
+10. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?
