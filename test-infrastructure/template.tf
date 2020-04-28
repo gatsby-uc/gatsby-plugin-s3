@@ -88,6 +88,7 @@ resource "aws_cloudwatch_event_rule" "event" {
 }
 
 resource "aws_cloudwatch_event_target" "target" {
+    target_id = "cleanup-function"
     rule = aws_cloudwatch_event_rule.event.name
     arn = aws_lambda_function.function.arn
 }
