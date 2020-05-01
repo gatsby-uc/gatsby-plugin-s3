@@ -1,32 +1,36 @@
 {
-    "name": "gatsby-starter-default",
-    "description": "Gatsby default starter",
-    "version": "1.0.0",
-    "author": "Kyle Mathews <mathews.kyle@gmail.com>",
-    "dependencies": {
-        "dotenv": "^8.2.0",
-        "gatsby": "^2.18.10",
-        "gatsby-plugin-create-client-paths": "^2.0.3",
-        "gatsby-plugin-offline": "^2.0.23",
-        "gatsby-plugin-s3": "file:../..",
-        "prop-types": "^15.6.2",
-        "react": "^16.6.3",
-        "react-dom": "^16.6.3"
-    },
-    "keywords": [
-        "gatsby"
-    ],
-    "license": "MIT",
-    "scripts": {
-        "build": "gatsby build",
-        "develop": "gatsby develop",
-        "start": "npm run develop",
-        "format": "prettier --write \"src/**/*.js\"",
-        "deploy": "gatsby-plugin-s3 deploy",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/gatsbyjs/gatsby-starter-default"
-    }
+  "name": "gatsby-starter-default",
+  "description": "Gatsby default starter",
+  "version": "1.0.0",
+  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "gatsby": "^2.18.10",
+    "gatsby-plugin-create-client-paths": "^2.0.3",
+    "gatsby-plugin-offline": "^2.0.23",
+    "gatsby-plugin-s3": "file:../..",
+    "prop-types": "^15.6.2",
+    "react": "^16.6.3",
+    "react-dom": "^16.6.3",
+    "snyk": "^1.316.1"
+  },
+  "keywords": [
+    "gatsby"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "start": "npm run develop",
+    "format": "prettier --write \"src/**/*.js\"",
+    "deploy": "gatsby-plugin-s3 deploy",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gatsbyjs/gatsby-starter-default"
+  },
+  "snyk": true
 }
