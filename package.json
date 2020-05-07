@@ -65,7 +65,6 @@
         "tslint": "^5.18.0",
         "tslint-config-oberon": "^1.1.1",
         "typescript": "^3.8.3",
-        "jest": "^23.6.0",
         "jest-junit": "^6.4.0"
     },
     "peerDependencies": {
