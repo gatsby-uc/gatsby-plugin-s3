@@ -1,0 +1,65 @@
+---
+# Name of the website
+# Defaults to the title (see below)
+site_name: ""
+
+# URL where the site will live
+site_url: ""
+
+# Title of the website
+title: "gatsby-plugin-s3"
+
+# Description of the website
+description: "Deploy your gatsby site to a S3 bucket."
+
+# URL to the logo of your site
+logo: ""
+
+# Link to, say GitHub issues, where users can send feedback
+feedback: "https://github.com/jariz/gatsby-plugin-s3/issues"
+
+# Copyright notice that would be placed in the footer
+copyright: "© Jari Zwarts 2020"
+
+
+# Accent color of the site
+# Default: `#3eb0ef`
+color: "#f8c555"
+
+
+# List of links that will be shown in the header
+# This is just an example structure
+# You can modify it any way you like
+links:
+  - name: "GitHub"
+    link: "https://github.com/jariz/gatsby-plugin-s3"
+  - name: "Gatsby Guide"
+    link: "https://www.gatsbyjs.org/docs/deploying-to-s3-cloudfront/"
+
+
+# Structure for sidebar navigation
+# This is just an example structure
+# You can modify it any way you like
+navigation:
+  - section: "Intro"
+    links:
+        - name: "Home"
+          link: "/"
+  - section: "Recipes"
+    links:
+      - name: "Retrieving env variables from a .env file"
+        link: "/recipes/with-dotenv"
+      - name: "Adding CloudFront"
+        link: "/recipes/with-cloudfront"
+      - name: "Using Serverless"
+        link: "/recipes/with-serverless"
+  - section: "Configuration"
+    links:
+      - name: "Using a different content type for files"
+        link: "/recipes/custom-content-type"
+      - name: "Using Yandex, DigitalOcean, or other S3 capable hosts"
+        link: "/recipes/custom-endpoint"
+      - name: "Configuring a proxy"
+        link: "/recipes/with-proxy"
+#      - name: "Using empty objects instead of routing rules"
+#        link: "/recipes/"

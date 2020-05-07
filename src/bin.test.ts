@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import chalk from 'chalk';
 import fetch from 'node-fetch';
 import { CACHING_PARAMS } from './constants';
@@ -22,12 +24,13 @@ describe('applies caching and content type headers', () => {
             continue;
         }
 
+        // eslint-disable-next-line no-loop-func
         it(`to ${pattern} files`, async () => {
             // find a file that matches this pattern
             const files = glob.sync(pattern, { cwd: PUBLIC_DIR, nodir: true });
             const file = files[0];
             const response = await fetch(`${TESTING_ENDPOINT}/${file}`);
-            const contentType = mime.getType(file) || 'application/octet-stream';
+            const contentType = mime.getType(file) ?? 'application/octet-stream';
             expect(response.ok).toBe(true);
             expect(response.headers.get('cache-control')).toBe(params.CacheControl);
             expect(response.headers.get('content-type')).toBe(contentType);
@@ -46,41 +49,40 @@ describe('redirects', () => {
     });
 
     test('temporarily', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/hello-there', { redirect: 'manual' });
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/client-only');
+        const response = await fetch(`${TESTING_ENDPOINT}/hello-there`, { redirect: 'manual' });
+        expect(response.headers.get('location')).toBe(`${TESTING_ENDPOINT}/client-only`);
         expect(response.status).toBe(302);
         const followedRedirect = await fetch(response.headers.get('location')!);
         expect(followedRedirect.status).toBe(200);
     });
 
     test('permanently with a destination that is prefixed with itself', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/blog', { redirect: 'manual' });
+        const response = await fetch(`${TESTING_ENDPOINT}/blog`, { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/blog/1');
+        expect(response.headers.get('location')).toBe(`${TESTING_ENDPOINT}/blog/1`);
         const followedRedirect = await fetch(response.headers.get('location')!);
         expect(followedRedirect.status).toBe(200);
     });
 
     test('client only routes', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/client-only/test', { redirect: 'manual' });
+        const response = await fetch(`${TESTING_ENDPOINT}/client-only/test`, { redirect: 'manual' });
         expect(response.status).toBe(302);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/client-only');
+        expect(response.headers.get('location')).toBe(`${TESTING_ENDPOINT}/client-only`);
         const followedRedirect = await fetch(response.headers.get('location')!);
         expect(followedRedirect.status).toBe(200);
     });
 
     test('special characters using WebsiteRedirectLocation', async () => {
-        const response = await fetch(
-            TESTING_ENDPOINT + '/asdf123.-~_!%24%26\'()*%2B%2C%3B%3D%3A%40%25', 
-            { redirect: 'manual' }
-        );
+        const response = await fetch(`${TESTING_ENDPOINT}/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25`, {
+            redirect: 'manual',
+        });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/special-characters');
+        expect(response.headers.get('location')).toBe(`${TESTING_ENDPOINT}/special-characters`);
     });
 
     test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(TESTING_ENDPOINT + '/trailing-slash/', { redirect: 'manual' });
+        const response = await fetch(`${TESTING_ENDPOINT}/trailing-slash/`, { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(TESTING_ENDPOINT + '/trailing-slash/1');
+        expect(response.headers.get('location')).toBe(`${TESTING_ENDPOINT}/trailing-slash/1`);
     });
 });

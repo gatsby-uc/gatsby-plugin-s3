@@ -1,0 +1,45 @@
+{
+  "name": "awesomedocs",
+  "description": "An awesome documentation site generator.",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Sankarsan Kampa",
+  "license": "GPL-3.0",
+  "repository": "https://github.com/AwesomeDocs/AwesomeDocs",
+  "scripts": {
+    "build": "./node_modules/.bin/gatsby build",
+    "lint": "./node_modules/.bin/tslint -p tsconfig.json",
+    "start": "./node_modules/.bin/gatsby develop",
+    "test": "yarn lint && yarn transpile",
+    "transpile": "./node_modules/.bin/tsc",
+    "deploy": "node -r dotenv/config ./node_modules/.bin/gatsby-plugin-s3 -y"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "gatsby": "^2.19.28",
+    "gatsby-plugin-glamor": "^2.0.9",
+    "gatsby-plugin-react-helmet": "^3.0.0",
+    "gatsby-plugin-s3": "^0.3.2",
+    "gatsby-plugin-typescript": "^2.0.0",
+    "gatsby-remark-prismjs": "^3.3.0",
+    "gatsby-source-filesystem": "^2.0.4",
+    "gatsby-transformer-remark": "^2.1.12",
+    "gatsby-transformer-yaml": "^2.1.5",
+    "glamor": "^2.20.40",
+    "prismjs": "^1.16.0",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "react-helmet": "^5.2.0",
+    "typescript": "^3.0.3",
+    "yaml": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^12.0.2",
+    "@types/react": "^16.4.14",
+    "@types/react-dom": "^16.0.7",
+    "@types/react-helmet": "^5.0.7",
+    "@types/yaml": "^1.0.2",
+    "gh-pages": "^2.0.0",
+    "tslint": "^5.11.0"
+  }
+}
