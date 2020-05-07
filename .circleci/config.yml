@@ -95,7 +95,7 @@ jobs:
           path: "./reports"
 
 workflows:
-  build-and-test:
+  deploy-docs:
     jobs:
       - deploy-docs:
           filters:
