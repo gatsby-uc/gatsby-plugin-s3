@@ -13,7 +13,7 @@ import {
     Permission,
 } from './helpers';
 
-jest.setTimeout(300000);
+jest.setTimeout(120000);
 dotenv.config();
 
 const bucketName = generateBucketName();
