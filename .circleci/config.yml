@@ -97,7 +97,10 @@ jobs:
 workflows:
   build-and-test:
     jobs:
-      - deploy-docs
+      - deploy-docs:
+          filters:
+            branches:
+              only: master
   main:
     jobs:
       - install
