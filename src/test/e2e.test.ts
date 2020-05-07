@@ -5,14 +5,15 @@ import * as dotenv from 'dotenv';
 // import mime from 'mime';
 import {
     generateBucketName,
-    buildSite, deploySite,
+    buildSite,
+    deploySite,
     forceDeleteBucket,
     cleanupExistingBuckets,
     EnvironmentBoolean,
-    Permission
+    Permission,
 } from './helpers';
 
-jest.setTimeout(30000);
+jest.setTimeout(300000);
 dotenv.config();
 
 const bucketName = generateBucketName();
@@ -51,14 +52,7 @@ describe('gatsby-plugin-s3', () => {
 
     test(`IAM policy to enable testing permissions is present and bucket doesn't already exist`, async () => {
         await expect(
-            deploySite(
-                'with-redirects',
-                [
-                    Permission.PutObject,
-                    Permission.PutBucketAcl,
-                    Permission.PutBucketWebsite,
-                ]
-            )
+            deploySite('with-redirects', [Permission.PutObject, Permission.PutBucketAcl, Permission.PutBucketWebsite])
         ).rejects.toThrow();
     });
 
@@ -78,41 +72,35 @@ describe('gatsby-plugin-s3', () => {
 describe('object-based redirects', () => {
     beforeAll(async () => {
         await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.False });
-        await deploySite(
-            'with-redirects',
-            [
-                Permission.CreateBucket,
-                Permission.PutObject,
-                Permission.PutBucketWebsite,
-                Permission.DeleteObject,
-            ]
-        );
+        await deploySite('with-redirects', [
+            Permission.CreateBucket,
+            Permission.PutObject,
+            Permission.PutBucketWebsite,
+            Permission.DeleteObject,
+        ]);
     });
 
     test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(testingEndpoint + '/trailing-slash/', { redirect: 'manual' });
+        const response = await fetch(`${testingEndpoint}/trailing-slash/`, { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(testingEndpoint + '/trailing-slash/1');
+        expect(response.headers.get('location')).toBe(`${testingEndpoint}/trailing-slash/1`);
     });
 });
 
 describe('rules-based redirects', () => {
     beforeAll(async () => {
         await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.True });
-        await deploySite(
-            'with-redirects',
-            [
-                Permission.CreateBucket,
-                Permission.PutObject,
-                Permission.PutBucketWebsite,
-                Permission.DeleteObject,
-            ]
-        );
+        await deploySite('with-redirects', [
+            Permission.CreateBucket,
+            Permission.PutObject,
+            Permission.PutBucketWebsite,
+            Permission.DeleteObject,
+        ]);
     });
 
     test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(testingEndpoint + '/trailing-slash/', { redirect: 'manual' });
+        const response = await fetch(`${testingEndpoint}/trailing-slash/`, { redirect: 'manual' });
         expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(testingEndpoint + '/trailing-slash/1');
+        expect(response.headers.get('location')).toBe(`${testingEndpoint}/trailing-slash/1`);
     });
 });
