@@ -126,8 +126,6 @@ jobs:
               done
               IFS=' '
             fi
-      - git-tools/prcomment:
-          comment: "Waiting for approval from a project maintainer before running e2e tests. https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID"
 
 workflows:
   deploy-docs:
