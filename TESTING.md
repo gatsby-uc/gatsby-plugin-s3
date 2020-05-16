@@ -71,12 +71,10 @@ view its value inside the test-infrastructure/terraform.tfstate file.)
 
 11. Configure the context's `VCS_TOKEN` environment variable to the GitHub Personal Access Token you created.
 
-12. [Configure your CircleCI organization to allow uncertified orbs.](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)
-
-13. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+12. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
 
-14. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
+13. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?
