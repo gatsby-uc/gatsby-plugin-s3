@@ -112,7 +112,7 @@ jobs:
                   GITHUB_REPO=${BASH_REMATCH[1]}
                   GITHUB_PR_NUM=${BASH_REMATCH[2]}
 
-                  if [ "$GITHUB_REPO" == "$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"]
+                  if [[ "$GITHUB_REPO" == "$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" ]]
                   then
                     # Fetch log
                     if [ ! -z $GITTOOLS_LOGPATH ]
