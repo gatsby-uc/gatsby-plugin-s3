@@ -76,6 +76,7 @@ make a GitHub App do this instead, please submit a Pull Request and let us know.
 
 12. Configure the context's `PING_PROJECT_MAINTAINERS` environment variable to include @mentions for everyone you want to notify.
 E.g. `@jariz @JoshuaWalsh`. If you don't want to ping anyone, leave this blank.
+Note that it's not possible to ping the person who created the Personal Access Token.
 
 13. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
