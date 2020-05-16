@@ -57,16 +57,13 @@ how often you'd like the cleanup script to run, in minutes.
 
 6. In your CircleCI account, create a context called `gatsby-plugin-s3-e2e`.
 
-6. Configure the context's `AWS_ACCESS_KEY_ID` environment variable to the value of the
+7. Configure the context's `AWS_ACCESS_KEY_ID` environment variable to the value of the
 test_user_access_key_id output.
 
-7. Configure the context's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
+8. Configure the context's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
 test_user_secret_access_key output. (This output is marked as sensitive. To view it's value you can run
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
-
-8. Configure the context's `SKIP_BUCKET_CLEANUP` environment variable to `1`. This disables the leftover bucket
-check that runs before each test run, which you no longer need because you have the Lambda script.
 
 9. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
