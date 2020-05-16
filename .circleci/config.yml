@@ -106,8 +106,8 @@ jobs:
               if [ $VCS_TYPE == "github" ]
               then
                 # Loop through all Pull Requests
-                IFS=',' read -ra PULL_REQUESTS <<< "$CIRCLE_PULL_REQUESTS"
-                for PULL_REQUEST in "${PULL_REQUESTS[@]}"; do
+                IFS=','
+                for PULL_REQUEST in $CIRCLE_PULL_REQUESTS do
                   # Fetch PR Number
                   if [[ "$PULL_REQUEST" =~ https://github.com/(.*)/pull/([0-9]+) ]]
                   then
@@ -127,6 +127,7 @@ jobs:
                     echo "Unable to parse PR URL $PULL_REQUEST"
                   fi
                 done
+                IFS=' '
               elif [ $VCS_TYPE == "bitbucket" ]
               then
                 # BitBucket PR Comment Module
