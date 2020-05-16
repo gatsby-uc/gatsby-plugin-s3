@@ -98,6 +98,7 @@ workflows:
   deploy-docs:
     jobs:
       - deploy-docs:
+          context: gatsby-plugin-s3-docs
           filters:
             branches:
               only: master
@@ -110,6 +111,11 @@ workflows:
       - build:
           requires:
             - install
-      - test_e2e:
+      - hold:
+          type: approval
           requires:
             - build
+      - test_e2e:
+          context: gatsby-plugin-s3-e2e
+          requires:
+            - hold

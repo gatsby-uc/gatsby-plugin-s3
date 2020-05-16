@@ -33,16 +33,14 @@ view its value inside the `test-infrastructure/terraform.tfstate` file.)
 
 ## Setup for Continuous Integration / maintainers
 
-If you are maintaining a fork of gatsby-plugin-s3 that has Continuous Integration set up, and your CI is configured
-to automatically run tests against Pull Requests, you should follow this setup procedure in order to discourage
-malicious actors from using your project to abuse your AWS account.
+gatsby-plugin-s3 uses CircleCI to provide Continuous Integration. This procedure includes additional steps for
+configuring CircleCI, and also replaces the bucket cleanup that runs at the start of each test execution with a Lambda
+script that runs periodically.
 
-Specifically what these steps do that the "for individual developers" steps don't, is they deploy a Lambda script
-that (thanks to CloudWatch Events) runs periodically and deletes any leftover test buckets. This way, in the worst case
-that an attacker creates a malicious Pull Request to upload bad files to a bucket using your account and disables the
-cleanup code that runs after each test, the bucket would be automatically deleted after a short interval anyway.
-
-This procedure will incur a small cost for the Lambda function execution.
+This procedure may incur a small monthly cost for the Lambda function execution, depending on what other Lambda scripts
+you have running in your AWS account. CircleCI provides a generous
+[free offering for open source projects](https://circleci.com/open-source/),
+so provided your fork is publicly accessible there shouldn't be any cost associated with that part.
 
 1. On a development PC, [install Terraform](https://learn.hashicorp.com/terraform/getting-started/install) and make
 sure you've added it to your PATH.
@@ -57,15 +55,17 @@ sure you've added it to your PATH.
 5. Run `terraform apply -var 'bucket_deletion_period=60'` to deploy the required infrastructure. Change the `60` to
 how often you'd like the cleanup script to run, in minutes.
 
-6. Configure your CI environment's `AWS_ACCESS_KEY_ID` environment variable to the value of the
+6. In your CircleCI account, create a context called `gatsby-plugin-s3-e2e`.
+
+6. Configure the context's `AWS_ACCESS_KEY_ID` environment variable to the value of the
 test_user_access_key_id output.
 
-7. Configure your CI environment's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
+7. Configure the context's `AWS_SECRET_ACCESS_KEY` environment variable to the value of the
 test_user_secret_access_key output. (This output is marked as sensitive. To view it's value you can run
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
-8. Configure your CI environment's `SKIP_BUCKET_CLEANUP` environment variable to `1`. This disables the leftover bucket
+8. Configure the context's `SKIP_BUCKET_CLEANUP` environment variable to `1`. This disables the leftover bucket
 check that runs before each test run, which you no longer need because you have the Lambda script.
 
 9. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
