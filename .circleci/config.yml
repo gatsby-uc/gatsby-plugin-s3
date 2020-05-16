@@ -104,7 +104,8 @@ jobs:
             else
               # Loop through all Pull Requests
               IFS=','
-              for PULL_REQUEST in $CIRCLE_PULL_REQUESTS do
+              for PULL_REQUEST in $CIRCLE_PULL_REQUESTS
+              do
                 # Fetch PR Number
                 if [[ "$PULL_REQUEST" =~ https://github.com/(.*)/pull/([0-9]+) ]]
                 then
@@ -118,7 +119,7 @@ jobs:
                   # Curl Request to post comment to PR
                   ## Currently this seems to only update the top most comment.
                   curl -s -H "Authorization: token ${VCS_TOKEN}" -X POST \
-                  -d "{\"body\": \"${GIT_COMMIT_MESSAGE} ${PRCOMMENT_LOG}\"}" \
+                  -d "{\"body\": \"[AUTOMATED MESSAGE]\nWaiting for approval from a project maintainer before running e2e tests.\n\n$PING_PROJECT_MAINTAINERS https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID\"}" \
                   "https://api.github.com/repos/${GITHUB_REPO}/issues/${GITHUB_PR_NUM}/comments"
                 else
                   echo "Unable to parse PR URL $PULL_REQUEST"

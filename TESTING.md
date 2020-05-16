@@ -66,15 +66,21 @@ test_user_secret_access_key output. (This output is marked as sensitive. To view
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
 9. [Create a GitHub Personal Access Token](https://github.com/settings/tokens/new). Give it access to the public_repo scope.
+When a Pull Request is made or updated, CircleCI will make a comment to notify users that the workflow is awaiting approval.
+The comment will be made using the identity of whichever GitHub user issued the token. If you can figure out how to
+make a GitHub App do this instead, please submit a Pull Request and let us know.
 
 10. In CircleCI, create a Context called `gatsby-plugin-s3-github`.
 
 11. Configure the context's `VCS_TOKEN` environment variable to the GitHub Personal Access Token you created.
 
-12. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+12. Configure the context's `PING_PROJECT_MAINTAINERS` environment variable to include @mentions for everyone you want to notify.
+E.g. `@jariz @JoshuaWalsh`. If you don't want to ping anyone, leave this blank.
+
+13. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
 
-13. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
+14. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?
