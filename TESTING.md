@@ -65,10 +65,12 @@ test_user_secret_access_key output. (This output is marked as sensitive. To view
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
-9. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+9. [Configure your CircleCI organization to allow uncertified orbs.](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)
+
+10. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
 
-10. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
+11. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?
