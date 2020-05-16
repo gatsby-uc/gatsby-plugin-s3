@@ -55,7 +55,7 @@ sure you've added it to your PATH.
 5. Run `terraform apply -var 'bucket_deletion_period=60'` to deploy the required infrastructure. Change the `60` to
 how often you'd like the cleanup script to run, in minutes.
 
-6. In your CircleCI account, create a context called `gatsby-plugin-s3-e2e`.
+6. In your CircleCI account, create a Context called `gatsby-plugin-s3-e2e`.
 
 7. Configure the context's `AWS_ACCESS_KEY_ID` environment variable to the value of the
 test_user_access_key_id output.
@@ -65,12 +65,18 @@ test_user_secret_access_key output. (This output is marked as sensitive. To view
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
-9. [Configure your CircleCI organization to allow uncertified orbs.](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)
+9. [Create a GitHub Personal Access Token](https://github.com/settings/tokens/new). Give it access to the public_repo scope.
 
-10. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+10. In CircleCI, create a Context called `gatsby-plugin-s3-github`.
+
+11. Configure the context's `VCS_TOKEN` environment variable to the GitHub Personal Access Token you created.
+
+12. [Configure your CircleCI organization to allow uncertified orbs.](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)
+
+13. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
 as you used in step 5 to apply the update.
 
-11. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
+14. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?

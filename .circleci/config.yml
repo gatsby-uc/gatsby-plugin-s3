@@ -118,6 +118,7 @@ workflows:
           requires:
             - install
       - notify:
+          context: gatsby-plugin-s3-github
           requires:
             - build
       - hold:
