@@ -111,16 +111,20 @@ jobs:
                 then
                   GITHUB_REPO=${BASH_REMATCH[1]}
                   GITHUB_PR_NUM=${BASH_REMATCH[2]}
-                  # Fetch log
-                  if [ ! -z $GITTOOLS_LOGPATH ]
+
+                  if [ "$GITHUB_REPO" == "$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"]
                   then
-                    PRCOMMENT_LOG="Log:\n$(cat $GITTOOLS_LOGPATH)"
+                    # Fetch log
+                    if [ ! -z $GITTOOLS_LOGPATH ]
+                    then
+                      PRCOMMENT_LOG="Log:\n$(cat $GITTOOLS_LOGPATH)"
+                    fi
+                    # Curl Request to post comment to PR
+                    ## Currently this seems to only update the top most comment.
+                    curl -s -H "Authorization: token ${VCS_TOKEN}" -X POST \
+                    -d "{\"body\": \"[AUTOMATED MESSAGE]\nWaiting for approval from a project maintainer before running e2e tests.\n\n$PING_PROJECT_MAINTAINERS https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID\"}" \
+                    "https://api.github.com/repos/${GITHUB_REPO}/issues/${GITHUB_PR_NUM}/comments"
                   fi
-                  # Curl Request to post comment to PR
-                  ## Currently this seems to only update the top most comment.
-                  curl -s -H "Authorization: token ${VCS_TOKEN}" -X POST \
-                  -d "{\"body\": \"[AUTOMATED MESSAGE]\nWaiting for approval from a project maintainer before running e2e tests.\n\n$PING_PROJECT_MAINTAINERS https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID\"}" \
-                  "https://api.github.com/repos/${GITHUB_REPO}/issues/${GITHUB_PR_NUM}/comments"
                 else
                   echo "Unable to parse PR URL $PULL_REQUEST"
                 fi
