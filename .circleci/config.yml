@@ -95,6 +95,7 @@ jobs:
       - store_test_results:
           path: "./reports"
   notify:
+    executor: node
     steps:
       - prcomment:
           comment: "Waiting for approval from a project maintainer before running e2e tests. https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID"
