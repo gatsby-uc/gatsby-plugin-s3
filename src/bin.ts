@@ -184,9 +184,7 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
                     LocationConstraint: config.region,
                 };
             }
-            console.log('Creating bucket', config.bucketName);
             await s3.createBucket(createParams).promise();
-            console.log('Bucket created');
         }
 
         if (config.enableS3StaticWebsiteHosting) {
@@ -206,23 +204,18 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
                 websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
             }
 
-            console.log('Updating bucket website', config.bucketName);
             await s3.putBucketWebsite(websiteConfig).promise();
-            console.log('Bucket website updated');
         }
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
-        console.log('Listing objects');
         const objects = await listAllObjects(s3, config.bucketName);
-        console.log('Objects listed');
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
         const isKeyInUse: { [objectKey: string]: boolean } = {};
-        console.log('Starting upload');
 
         stream.on('data', ({ path, stats }) => {
             if (!stats.isFile()) {
