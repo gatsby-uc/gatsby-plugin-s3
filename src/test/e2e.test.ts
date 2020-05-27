@@ -1,8 +1,6 @@
 import fetch from 'node-fetch';
 import * as dotenv from 'dotenv';
-// import { CACHING_PARAMS } from '../constants';
-// import glob from 'glob';
-// import mime from 'mime';
+import glob from 'glob';
 import {
     generateBucketName,
     buildSite,
@@ -11,9 +9,11 @@ import {
     cleanupExistingBuckets,
     EnvironmentBoolean,
     Permission,
+    resolveSiteDirectory,
 } from './helpers';
+import 'jest-expect-message';
 
-jest.setTimeout(120000);
+jest.setTimeout(150000);
 dotenv.config();
 
 const bucketName = generateBucketName();
@@ -47,7 +47,7 @@ afterAll(async () => {
 
 describe('gatsby-plugin-s3', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', { TARGET_BUCKET: bucketName });
+        await buildSite('with-redirects', { GATSBY_S3_TARGET_BUCKET: bucketName });
     });
 
     test(`IAM policy to enable testing permissions is present and bucket doesn't already exist`, async () => {
@@ -70,26 +70,139 @@ describe('gatsby-plugin-s3', () => {
 });
 
 describe('object-based redirects', () => {
+    const siteDirectory = resolveSiteDirectory('with-redirects');
     beforeAll(async () => {
-        await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.False });
+        await buildSite('with-redirects', {
+            GATSBY_S3_TARGET_BUCKET: bucketName,
+            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.False,
+        });
         await deploySite('with-redirects', [
-            Permission.CreateBucket,
             Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.CreateBucket,
+            Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
-            Permission.DeleteObject,
         ]);
     });
 
-    test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(`${testingEndpoint}/trailing-slash/`, { redirect: 'manual' });
-        expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(`${testingEndpoint}/trailing-slash/1`);
+    const headerTests = [
+        {
+            name: 'html files',
+            path: '/',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'text/html',
+        },
+        {
+            name: 'page-data files',
+            path: '/page-data/index/page-data.json',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'application/json',
+        },
+        {
+            name: 'sw.js',
+            path: '/sw.js',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'application/javascript',
+        },
+        {
+            name: 'static files',
+            searchPattern: 'static/**/**.json',
+            cacheControl: 'public, max-age=31536000, immutable',
+            contentType: 'application/json',
+        },
+        {
+            name: 'js files',
+            searchPattern: '**/**/!(sw).js',
+            cacheControl: 'public, max-age=31536000, immutable',
+            contentType: 'application/javascript',
+        },
+        {
+            name: 'css files',
+            searchPattern: '**/**.css',
+            cacheControl: 'public, max-age=31536000, immutable',
+            contentType: 'text/css',
+        },
+    ];
+
+    headerTests.forEach(t => {
+        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+            let path;
+            if (t.path) {
+                path = t.path;
+            } else {
+                console.log(`${siteDirectory}/`);
+                const matchingFiles = glob.sync(t.searchPattern!, { cwd: `${siteDirectory}/public`, nodir: true });
+                path = `/${matchingFiles[0]}`;
+                console.log(path);
+            }
+
+            if (!path) {
+                throw new Error(`Failed to find matching file for pattern ${t.searchPattern}`);
+            }
+
+            const response = await fetch(`${testingEndpoint}${path}`);
+            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
+            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
+            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+        });
+    });
+
+    const redirectTests = [
+        {
+            name: 'from root',
+            source: '/',
+            expectedDestination: '/page-2',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'temporarily',
+            source: '/hello-there',
+            expectedDestination: '/client-only',
+            expectedResponseCode: 302,
+        },
+        {
+            name: 'to a child directory',
+            source: '/blog',
+            expectedDestination: '/blog/1',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'client-only routes',
+            source: '/client-only/test',
+            expectedDestination: '/client-only',
+            expectedResponseCode: 302,
+        },
+        {
+            name: 'from a path containing special characters',
+            source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
+            expectedDestination: '/special-characters',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'from a path with a trailing slash',
+            source: '/trailing-slash/',
+            expectedDestination: '/trailing-slash/1',
+            expectedResponseCode: 301,
+        },
+    ];
+
+    redirectTests.forEach(t => {
+        test(`can redirect ${t.name}`, async () => {
+            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
+            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
+            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
+                `${testingEndpoint}${t.expectedDestination}`
+            );
+        });
     });
 });
 
 describe('rules-based redirects', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', { TARGET_BUCKET: bucketName, LEGACY_REDIRECTS: EnvironmentBoolean.True });
+        await buildSite('with-redirects', {
+            GATSBY_S3_TARGET_BUCKET: bucketName,
+            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.True,
+        });
         await deploySite('with-redirects', [
             Permission.CreateBucket,
             Permission.PutObject,
@@ -98,9 +211,52 @@ describe('rules-based redirects', () => {
         ]);
     });
 
-    test('trailing slash using WebsiteRedirectLocation', async () => {
-        const response = await fetch(`${testingEndpoint}/trailing-slash/`, { redirect: 'manual' });
-        expect(response.status).toBe(301);
-        expect(response.headers.get('location')).toBe(`${testingEndpoint}/trailing-slash/1`);
+    const redirectTests = [
+        {
+            name: 'from root',
+            source: '/',
+            expectedDestination: '/page-2',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'temporarily',
+            source: '/hello-there',
+            expectedDestination: '/client-only',
+            expectedResponseCode: 302,
+        },
+        {
+            name: 'to a child directory',
+            source: '/blog',
+            expectedDestination: '/blog/1',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'client-only routes',
+            source: '/client-only/test',
+            expectedDestination: '/client-only',
+            expectedResponseCode: 302,
+        },
+        {
+            name: 'from a path containing special characters',
+            source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
+            expectedDestination: '/special-characters',
+            expectedResponseCode: 301,
+        },
+        {
+            name: 'from a path with a trailing slash',
+            source: '/trailing-slash/',
+            expectedDestination: '/trailing-slash/1',
+            expectedResponseCode: 301,
+        },
+    ];
+
+    redirectTests.forEach(t => {
+        test(`can redirect ${t.name}`, async () => {
+            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
+            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
+            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
+                `${testingEndpoint}${t.expectedDestination}`
+            );
+        });
     });
 });

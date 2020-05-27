@@ -11,9 +11,14 @@ module.exports = {
         {
             resolve: `gatsby-plugin-s3`,
             options: {
-                bucketName: process.env.TARGET_BUCKET,
+                bucketName: process.env.GATSBY_S3_TARGET_BUCKET || 'test',
                 region: 'eu-west-1',
-                generateRedirectObjectsForPermanentRedirects: !process.env.LEGACY_REDIRECTS,
+                generateRedirectObjectsForPermanentRedirects: !process.env.GATSBY_S3_LEGACY_REDIRECTS,
+                ...(process.env.GATSBY_S3_ACL
+                    ? {
+                          acl: process.env.ACL != 'NULL' ? process.env.ACL : null,
+                      }
+                    : {}),
             },
         },
         {
