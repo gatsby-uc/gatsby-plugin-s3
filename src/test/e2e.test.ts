@@ -28,11 +28,13 @@ beforeAll(async () => {
         try {
             await cleanupExistingBuckets(!!process.env.CLEANUP_TEST_BUCKETS);
         } catch (err) {
-            console.error('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!');
-            console.error(err);
-            throw new Error('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!');
-            // Note that even with this failure, Jest continues running tests but the results are unusable!
+            // We can't use console.error here because Jest swallows it.
+            // I'd love to just throw an error instead of killing the process, but if we do that
+            // Jest continues running tests but the results are unusable!
             // https://github.com/facebook/jest/issues/2713
+            process.stderr.write('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!\n');
+            process.stderr.write(`${err}\n`);
+            process.exit(1);
         }
     }
 });
