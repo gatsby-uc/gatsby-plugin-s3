@@ -130,13 +130,18 @@ jobs:
               cat sig.txt | base64 | tr +/ -_ | tr -d '==' | tr -d '\n' > sig.b64
               JWT="$(<unsigned.b64).$(<sig.b64)"
 
+              echo "JWT $JWT"
+
               echo "Retrieving installation access token..."
-              TOKEN=$(curl -s -X POST \
+              TOKEN_RESPONSE=$(curl -s -X POST \
                 -H "Authorization: Bearer $JWT" \
                 -H "Accept: application/vnd.github.machine-man-preview+json" \
-                https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens |
-                node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin').toString()).token")
+                https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens)
+              echo "Response $TOKEN_RESPONSE"
+              TOKEN=$(echo $TOKEN_RESPONSE | node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin').toString()).token")
               
+              echo "Using token $TOKEN"
+
                 # Loop through all Pull Requests
               IFS=','
               for PULL_REQUEST in $CIRCLE_PULL_REQUESTS
@@ -155,10 +160,10 @@ jobs:
                       PRCOMMENT_LOG="Log:\n$(cat $GITTOOLS_LOGPATH)"
                     fi
 
-                    echo "Commenting on PR number $GITHUB_PR_NUM in repo $GITHUB_REPO"
+                    echo "Commenting on PR number $GITHUB_PR_NUM in repo $GITHUB_REPO..."
                     # Curl Request to post comment to PR
                     ## Currently this seems to only update the top most comment.
-                    curl -s -H "Authorization: token ${TOKEN}" -X POST \
+                    curl -s -H "Authorization: token $TOKEN" -X POST \
                     -d "{\"body\": \"[AUTOMATED MESSAGE]\nWaiting for approval from a project maintainer before running e2e tests.\n\n$PING_PROJECT_MAINTAINERS https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID\"}" \
                     "https://api.github.com/repos/${GITHUB_REPO}/issues/${GITHUB_PR_NUM}/comments"
                   fi
