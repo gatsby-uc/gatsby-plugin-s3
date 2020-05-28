@@ -65,23 +65,45 @@ test_user_secret_access_key output. (This output is marked as sensitive. To view
 `terraform output test_user_secret_access_key` or, if you don't want the value outputted to the terminal, you can
 view its value inside the test-infrastructure/terraform.tfstate file.)
 
-9. [Create a GitHub Personal Access Token](https://github.com/settings/tokens/new). Give it access to the public_repo scope.
-When a Pull Request is made or updated, CircleCI will make a comment to notify users that the workflow is awaiting approval.
-The comment will be made using the identity of whichever GitHub user issued the token. If you can figure out how to
-make a GitHub App do this instead, please submit a Pull Request and let us know.
+9. [Create a GitHub App](https://github.com/settings/apps/new). At a minimum you need to enter a unique name,
+a homepage URL (you can use your repo's address), disable "Expire user authorization tokens", disable Webook, and grant
+read+write access for Pull Requests.
 
-10. In CircleCI, create a Context called `gatsby-plugin-s3-github`.
+10. Make a note of the App ID.
 
-11. Configure the context's `VCS_TOKEN` environment variable to the GitHub Personal Access Token you created.
+11. Generate a private key for your app.
 
-12. Configure the context's `PING_PROJECT_MAINTAINERS` environment variable to include @mentions for everyone you want to notify.
+12. Go to the "Install App" section of your app and install it on your account or organisation. Grant the app
+access to your fork. Make a note of the Installation ID.
+
+13. In CircleCI, create a Context called `gatsby-plugin-s3-github`.
+
+14. Configure the context's `GITHUB_APP_ID` environment variable to the App ID.
+
+15. Open the .pem private key file you generated earlier in a text editor.
+
+16. Remove the header and footer:
+
+```
+-----BEGIN RSA PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----
+```
+
+Keep the base64 encoded key.
+
+17. Remove all line breaks so the key is entirely on a single line.
+
+18. Configure the context's `GITHUB_APP_PRIVATE_KEY` environment variable to the single-line base64 private key.
+
+19. Configure the context's `GITHUB_APP_INSTALLATION_ID` environment variable to the Installation ID.
+
+20. Configure the context's `PING_PROJECT_MAINTAINERS` environment variable to include @mentions for everyone you want to notify.
 E.g. `@jariz @JoshuaWalsh`. If you don't want to ping anyone, leave this blank.
-Note that it's not possible to ping the person who created the Personal Access Token.
 
-13. When updates are made to the test infrastructure in future, review the changes and ensure run the same apply command
+21. When updates are made to the test infrastructure in future, review the changes and run the same apply command
 as you used in step 5 to apply the update.
 
-14. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
+22. (Optional) If you would like to run the tests locally as well as in CI, you can put the same
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your `.env` file.
 
 ## How do the e2e tests work?
