@@ -1,0 +1,7 @@
+# Because examples don't have a TypeScript project, they cause @typescript-eslint/parser fails
+# It's not possible to just disable @typescript-eslint in that directory,
+# because [eslint configs cascade](https://eslint.org/docs/user-guide/configuring#configuration-cascading-and-hierarchy)
+# and as far as I can tell there's no way to remove a plugin once it's been activated.
+# Also we don't even add the plugin ourselves, that comes from the oberon config that we extend.
+# So let's just disable linting on the examples directory until we can find a more elegant solution.
+examples
