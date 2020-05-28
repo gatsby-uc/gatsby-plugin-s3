@@ -102,6 +102,9 @@ jobs:
             then
               echo "The current build is not a Pull Request. If you intend to open an pull request after this commit, all following commits will be commented"
             else
+              echo "Pull request detected, preparing to comment"
+
+              echo "Generating JWT..."
               NOW=$(date +%s)
               EXP=$(date -d "5 minutes" +%s)
 
@@ -127,6 +130,7 @@ jobs:
               cat sig.txt | base64 | tr +/ -_ | tr -d '==' | tr -d '\n' > sig.b64
               JWT="$(<unsigned.b64).$(<sig.b64)"
 
+              echo "Retrieving installation access token..."
               TOKEN=$(curl -s -X POST \
                 -H "Authorization: Bearer $JWT" \
                 -H "Accept: application/vnd.github.machine-man-preview+json" \
@@ -150,6 +154,8 @@ jobs:
                     then
                       PRCOMMENT_LOG="Log:\n$(cat $GITTOOLS_LOGPATH)"
                     fi
+
+                    echo "Commenting on PR number $GITHUB_PR_NUM in repo $GITHUB_REPO"
                     # Curl Request to post comment to PR
                     ## Currently this seems to only update the top most comment.
                     curl -s -H "Authorization: token ${TOKEN}" -X POST \
@@ -161,6 +167,7 @@ jobs:
                 fi
               done
               IFS=' '
+              echo "Finished!"
             fi
 
 workflows:
