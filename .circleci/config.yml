@@ -12,7 +12,7 @@ jobs:
   deploy-docs:
     working_directory: ~/project/docs
     executor:
-      name: node/default
+      name: node
     steps:
       - checkout:
           path: ~/project
