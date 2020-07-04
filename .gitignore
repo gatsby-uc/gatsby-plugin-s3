@@ -75,3 +75,13 @@ jspm_packages/
 /*.js
 /*.js.map
 docs/build/
+
+/test/
+
+junit.xml
+/reports/
+
+/test-infrastructure/.terraform*
+/test-infrastructure/artifacts
+/test-infrastructure/terraform.tfstate
+/test-infrastructure/terraform.tfstate*

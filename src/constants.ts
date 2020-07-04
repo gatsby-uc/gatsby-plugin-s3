@@ -84,6 +84,9 @@ export interface S3PluginOptions extends PluginOptions {
     // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
+
+    // Max number of files to upload in parallel.
+    parallelLimit?: number;
 }
 
 export const DEFAULT_OPTIONS: S3PluginOptions = {
@@ -98,6 +101,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     enableS3StaticWebsiteHosting: true,
+    parallelLimit: 20,
 
     // the typing requires this for some reason...
     plugins: [],
