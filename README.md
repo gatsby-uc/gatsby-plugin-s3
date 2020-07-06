@@ -1,7 +1,6 @@
 # gatsby-plugin-s3
 
-[![](https://img.shields.io/npm/v/gatsby-plugin-s3.svg?style=flat)](https://npmjs.com/package/gatsby-plugin-s3)
-[![](https://img.shields.io/circleci/build/github/jariz/gatsby-plugin-s3?label=e2e](https://circleci.com/gh/jariz/gatsby-plugin-s3/)
+[![](https://img.shields.io/npm/v/gatsby-plugin-s3.svg?style=flat)](https://npmjs.com/package/gatsby-plugin-s3) [![CircleCI](https://img.shields.io/circleci/build/github/jariz/gatsby-plugin-s3)](https://circleci.com/gh/jariz/gatsby-plugin-s3)  
 
 ![](https://jari.lol/KCB4gNo4Xg.gif)
 
