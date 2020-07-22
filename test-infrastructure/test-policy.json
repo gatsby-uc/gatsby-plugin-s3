@@ -1,0 +1,141 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Admin0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:DeleteBucket"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*Admin*"
+                }
+            }
+        },
+        {
+            "Sid": "Admin1",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*Admin*"
+                }
+            }
+        },
+        {
+            "Sid": "Admin2",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*Admin*"
+                }
+            }
+        },
+        {
+            "Sid": "BasicPermissions0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucketLocation"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*"
+        },
+        {
+            "Sid": "BasicPermissions1",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*"
+        },
+        {
+            "Sid": "CreateBucket",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*CreateBucket*"
+                }
+            }
+        },
+        {
+            "Sid": "PutBucketAcl",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutBucketAcl"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*PutBucketAcl*"
+                }
+            }
+        },
+        {
+            "Sid": "PutBucketWebsite",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutBucketWebsite"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*PutBucketWebsite*"
+                }
+            }
+        },
+        {
+            "Sid": "PutObject",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*PutObject*"
+                }
+            }
+        },
+        {
+            "Sid": "PutObjectAcl",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObjectAcl"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*PutObjectAcl*"
+                }
+            }
+        },
+        {
+            "Sid": "DeleteObject",
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*DeleteObject*"
+                }
+            }
+        }
+    ]
+}
