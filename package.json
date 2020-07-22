@@ -46,7 +46,7 @@
         "@types/node-fetch": "^2.1.6",
         "@types/ora": "^3.0.0",
         "@types/stream-to-promise": "^2.2.0",
-        "@types/yargs": "^12.0.2",
+        "@types/yargs": "^15.0.5",
         "babel-jest": "^25.1.0",
         "dotenv": "^6.1.1",
         "es6-promisify": "^6.0.1",
@@ -64,7 +64,7 @@
         "node-fetch": "^2.3.0",
         "oberon-prettier-config": "^1.0.0",
         "prettier": "^1.19.1",
-        "snyk": "^1.198.0",
+        "snyk": "^1.361.2",
         "tslint": "^5.18.0",
         "tslint-config-oberon": "^1.1.1",
         "typescript": "^3.8.3"
@@ -96,7 +96,7 @@
         "pretty-error": "^2.1.1",
         "proxy-agent": "^3.1.1",
         "stream-to-promise": "^2.2.0",
-        "yargs": "^12.0.5"
+        "yargs": "^15.4.0"
     },
     "jest": {
         "roots": [

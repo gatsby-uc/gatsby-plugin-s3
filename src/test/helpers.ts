@@ -140,7 +140,7 @@ export const deploySite = async (site: string, additionalPermissions: Permission
     const output = await runScript(
         siteDirectory,
         './node_modules/gatsby-plugin-s3/bin.js',
-        ['build', '-y', '--userAgent', userAgent],
+        ['-y', '--userAgent', userAgent],
         {}
     );
 
