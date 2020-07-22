@@ -93,82 +93,6 @@ jobs:
           path: "./reports"
       - store_test_results:
           path: "./reports"
-  notify:
-    executor: node
-    steps:
-      - run:
-          command: |
-            if [ -z $CIRCLE_PULL_REQUEST ]
-            then
-              echo "The current build is not a Pull Request. If you intend to open an pull request after this commit, all following commits will be commented"
-            else
-              echo "Pull request detected, preparing to comment"
-
-              echo "Generating JWT..."
-              NOW=$(date +%s)
-              EXP=$(date -d "5 minutes" +%s)
-
-              echo "{\"alg\":\"RS256\",\"ty\":\"JWT\"}" |
-                base64 |
-                tr +/ -_ |
-                rev |
-                cut -c 2- |
-                rev > header.b64
-              echo "{\"iat\":$NOW,\"exp\":$EXP,\"iss\":$GITHUB_APP_ID}" |
-                base64 |
-                tr +/ -_ |
-                rev |
-                cut -c 2- |
-                rev > payload.b64
-              (
-                echo "-----BEGIN RSA PRIVATE KEY-----"
-                echo $GITHUB_APP_PRIVATE_KEY
-                echo "-----END RSA PRIVATE KEY-----"
-              ) > privkey.pem
-              printf "%s" "$(<header.b64)" "." "$(<payload.b64)" > unsigned.b64
-              openssl dgst -sha256 -sign privkey.pem -out sig.txt unsigned.b64
-              cat sig.txt | base64 | tr +/ -_ | tr -d '==' | tr -d '\n' > sig.b64
-              JWT="$(<unsigned.b64).$(<sig.b64)"
-
-              echo "Retrieving installation access token..."
-              TOKEN=$(curl -s -X POST \
-                -H "Authorization: Bearer $JWT" \
-                -H "Accept: application/vnd.github.machine-man-preview+json" \
-                https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens |
-                node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin').toString()).token")
-
-                # Loop through all Pull Requests
-              IFS=','
-              for PULL_REQUEST in $CIRCLE_PULL_REQUESTS
-              do
-                # Fetch PR Number
-                if [[ "$PULL_REQUEST" =~ https://github.com/(.*)/pull/([0-9]+) ]]
-                then
-                  GITHUB_REPO=${BASH_REMATCH[1]}
-                  GITHUB_PR_NUM=${BASH_REMATCH[2]}
-
-                  if [[ "$GITHUB_REPO" == "$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" ]]
-                  then
-                    # Fetch log
-                    if [ ! -z $GITTOOLS_LOGPATH ]
-                    then
-                      PRCOMMENT_LOG="Log:\n$(cat $GITTOOLS_LOGPATH)"
-                    fi
-
-                    echo "Commenting on PR number $GITHUB_PR_NUM in repo $GITHUB_REPO..."
-                    # Curl Request to post comment to PR
-                    ## Currently this seems to only update the top most comment.
-                    curl -s -H "Authorization: token $TOKEN" -X POST \
-                    -d "{\"body\": \"[AUTOMATED MESSAGE]\nWaiting for approval from a project maintainer before running e2e tests.\n\n$PING_PROJECT_MAINTAINERS https://circleci.com/workflow-run/$CIRCLE_WORKFLOW_ID\"}" \
-                    "https://api.github.com/repos/${GITHUB_REPO}/issues/${GITHUB_PR_NUM}/comments"
-                  fi
-                else
-                  echo "Unable to parse PR URL $PULL_REQUEST"
-                fi
-              done
-              IFS=' '
-              echo "Finished!"
-            fi
 
 workflows:
   deploy-docs:
@@ -191,11 +115,5 @@ workflows:
           context: gatsby-plugin-s3-github
           requires:
             - build
-      - hold:
-          type: approval
-          requires:
-            - build
       - test_e2e:
           context: gatsby-plugin-s3-e2e
-          requires:
-            - hold
