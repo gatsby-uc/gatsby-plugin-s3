@@ -113,3 +113,5 @@ workflows:
             - install
       - test_e2e:
           context: gatsby-plugin-s3-e2e
+          requires:
+            - build
