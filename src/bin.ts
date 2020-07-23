@@ -3,7 +3,7 @@
 import '@babel/polyfill';
 import 'fs-posix';
 import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
-import yargs, { Argv } from 'yargs';
+import yargs from 'yargs';
 import { CACHE_FILES, GatsbyRedirect, Params, S3PluginOptions } from './constants';
 import { readJson } from 'fs-extra';
 import klaw from 'klaw';
@@ -26,7 +26,6 @@ import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import proxy from 'proxy-agent';
 
-const cli = yargs();
 const pe = new PrettyError();
 
 const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
@@ -75,7 +74,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> => {
+const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectList> => {
     const list: ObjectList = [];
 
     let token: NextToken | undefined;
@@ -84,6 +83,7 @@ const listAllObjects = async (s3: S3, bucketName: string): Promise<ObjectList> =
             .listObjectsV2({
                 Bucket: bucketName,
                 ContinuationToken: token,
+                Prefix: bucketPrefix,
             })
             .promise();
 
@@ -105,7 +105,7 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
+const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string; userAgent: string }) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
 
@@ -134,6 +134,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
+            customUserAgent: userAgent || '',
             httpOptions,
         });
 
@@ -208,7 +209,7 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
-        const objects = await listAllObjects(s3, config.bucketName);
+        const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
@@ -222,7 +223,10 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
             }
             uploadQueue.push(
                 asyncify(async () => {
-                    const key = createSafeS3Key(relative(publicDir, path));
+                    let key = createSafeS3Key(relative(publicDir, path));
+                    if (config.bucketPrefix) {
+                        key = `${config.bucketPrefix}/${key}`;
+                    }
                     const readStream = fs.createReadStream(path);
                     const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
                     const data = await streamToPromise(hashStream);
@@ -274,6 +278,9 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
                         key = join(key, 'index.html');
                     }
                     key = createSafeS3Key(key);
+                    if (config.bucketPrefix) {
+                        key = withoutLeadingSlash(`${config.bucketPrefix}/${key}`);
+                    }
 
                     const tag = `"${createHash('md5')
                         .update(redirectLocation)
@@ -361,23 +368,27 @@ const deploy = async ({ yes, bucket }: { yes: boolean; bucket: string }) => {
     }
 };
 
-cli.command(
-    ['deploy', '$0'],
-    "Deploy bucket. If it doesn't exist, it will be created. Otherwise, it will be updated.",
-    (args: Argv) => {
-        args.option('yes', {
-            alias: 'y',
-            describe: 'Skip confirmation prompt',
-            boolean: true,
-        });
-        args.option('bucket', {
-            alias: 'b',
-            describe: 'Bucket name (if you wish to override default bucket name)',
-        });
-    },
-    deploy
-)
-    .wrap(cli.terminalWidth())
+yargs
+    .command(
+        ['deploy', '$0'],
+        "Deploy bucket. If it doesn't exist, it will be created. Otherwise, it will be updated.",
+        (args: yargs.Argv) => {
+            args.option('yes', {
+                alias: 'y',
+                describe: 'Skip confirmation prompt',
+                boolean: true,
+            });
+            args.option('bucket', {
+                alias: 'b',
+                describe: 'Bucket name (if you wish to override default bucket name)',
+            });
+            args.option('userAgent', {
+                describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
+            });
+        },
+        deploy as (args: { yes: boolean; bucket: string; userAgent: string }) => void
+    )
+    .wrap(yargs.terminalWidth())
     .demandCommand(1, `Pass --help to see all available commands and options.`)
     .strict()
     .showHelpOnFail(true)

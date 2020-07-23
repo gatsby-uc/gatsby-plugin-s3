@@ -1,11 +1,18 @@
 version: 2.1
+
 orbs:
   node: circleci/node@1.1.6
+executors:
+  node:
+    docker:
+      - image: circleci/node:12.16
+    working_directory: /tmp/gatsby-plugin-s3
+
 jobs:
   deploy-docs:
     working_directory: ~/project/docs
     executor:
-      name: node/default
+      name: node
     steps:
       - checkout:
           path: ~/project
@@ -17,7 +24,94 @@ jobs:
                 working_directory: ~/project/docs/.awesome
             - run: npm run build
             - run: npm run deploy
+  install:
+    executor: node
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+      - run:
+          name: install-dependencies
+          command: 'npm ci --dev'
+      - run:
+          name: install-example-dependencies
+          command: 'cd examples/with-redirects && npm ci --dev && cd ../..'
+      - run:
+          name: install-dependencies-again
+          # Not sure why, but for some reason installing the example dependencies uninstalls some of the main package dependencies
+          # Also not sure why, but for some reason installing example dependencies fails if the main package dependencies aren't already installed
+          # So we have to install the main package dependencies twice
+          command: 'npm ci --dev'
+      - save_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
+          paths:
+            - ./node_modules
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  lint:
+    executor: node
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: lint
+          command: ./node_modules/.bin/eslint "src/**.ts" -f junit -o reports/linter-results.xml
+      - store_artifacts:
+          prefix: tests
+          path: "./reports"
+      - store_test_results:
+          path: "./reports"
+
+  build:
+    executor: node
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: build
+          command: npm run-script build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  test_e2e:
+    executor: node
+    environment:
+      SKIP_BUCKET_CLEANUP: 1
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: e2e-tests
+          command: npm run-script test:e2e
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
+      - store_artifacts:
+          prefix: tests
+          path: "./reports"
+      - store_test_results:
+          path: "./reports"
+
 workflows:
-    build-and-test:
-      jobs:
-        - deploy-docs
+  deploy-docs:
+    jobs:
+      - deploy-docs:
+          context: gatsby-plugin-s3-docs
+          filters:
+            branches:
+              only: master
+  main:
+    jobs:
+      - install
+      - lint:
+          requires:
+            - install
+      - build:
+          requires:
+            - install
+      - test_e2e:
+          context: gatsby-plugin-s3-e2e
+          requires:
+            - build
