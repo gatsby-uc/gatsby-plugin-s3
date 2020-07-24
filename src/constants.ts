@@ -91,6 +91,10 @@ export interface S3PluginOptions extends PluginOptions {
 
     // Max number of files to upload in parallel.
     parallelLimit?: number;
+
+    // Whether to force path style URLs for S3 objects.
+    // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#s3ForcePathStyle-property
+    s3ForcePathStyle?: boolean;
 }
 
 export const DEFAULT_OPTIONS: S3PluginOptions = {

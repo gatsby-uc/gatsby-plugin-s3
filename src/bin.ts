@@ -131,12 +131,18 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
             };
         }
 
-        const s3 = new S3({
+        const s3ClientConfig: S3.ClientConfiguration = {
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
             customUserAgent: userAgent || '',
             httpOptions,
-        });
+        };
+
+        if (config.s3ForcePathStyle) {
+            s3ClientConfig.s3ForcePathStyle = true;
+        }
+
+        const s3 = new S3(s3ClientConfig);
 
         const { exists, region } = await getBucketInfo(config, s3);
 
