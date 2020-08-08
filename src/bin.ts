@@ -210,7 +210,7 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
         const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
-        const keyTagMapObjects = objects.reduce((acc: any, curr) => {
+        const keyToETagMap = objects.reduce((acc: any, curr) => {
             acc[curr.Key!] = curr.ETag;
             return acc;
         }, {});
@@ -236,7 +236,7 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
                     const data = await streamToPromise(hashStream);
 
                     const tag = `"${data}"`;
-                    const objectUnchanged = keyTagMapObjects[key] === tag;
+                    const objectUnchanged = keyToETagMap[key] === tag;
 
                     isKeyInUse[key] = true;
 
@@ -289,7 +289,7 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
                     const tag = `"${createHash('md5')
                         .update(redirectLocation)
                         .digest('hex')}"`;
-                    const objectUnchanged = keyTagMapObjects[key] === tag;
+                    const objectUnchanged = keyToETagMap[key] === tag;
 
                     isKeyInUse[key] = true;
 
