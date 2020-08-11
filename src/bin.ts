@@ -25,6 +25,7 @@ import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import proxy from 'proxy-agent';
+import globToRegExp from 'glob-to-regexp';
 
 const pe = new PrettyError();
 
@@ -329,9 +330,15 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
         await promisifiedParallelLimit(uploadQueue, config.parallelLimit as number);
 
         if (config.removeNonexistentObjects) {
+            const persistObjects = (config.retainObjectsPatterns ?? []).map(glob =>
+                globToRegExp(glob, { globstar: true, extended: true })
+            );
             const objectsToRemove = objects
                 .map(obj => ({ Key: obj.Key as string }))
-                .filter(obj => obj.Key && !isKeyInUse[obj.Key]);
+                .filter(obj => {
+                    if (!obj.Key || isKeyInUse[obj.Key]) return false;
+                    return persistObjects.reduce((result, regexp) => result && !regexp.test(obj.Key), true);
+                });
 
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
                 const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);

@@ -74,7 +74,7 @@ AWS_ACCESS_KEY_ID=xxxx AWS_SECRET_ACCESS_KEY=xxxx npm run deploy
 Additionally, these can be set in a local `.env` file too, but this requires a bit more setup work. [See the recipe here](recipes/with-dotenv).
 
 ## Configuration
-Most of the aspects of the plugin can be configured.  
+Most of the aspects of the plugin can be configured.
 Default configuration is as follows:
 
 ```typescript
@@ -90,6 +90,7 @@ Default configuration is as follows:
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
+    retainObjectsPatterns: [],
     customAwsEndpointHostname: undefined,
     enableS3StaticWebsiteHosting: true,
     parallelLimit: 20,

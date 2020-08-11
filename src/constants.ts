@@ -78,6 +78,9 @@ export interface S3PluginOptions extends PluginOptions {
     // Remove S3 objects if they no longer exist locally
     removeNonexistentObjects?: boolean;
 
+    // a list of file globs that should not be removed via removeNonexistentObjects
+    retainObjectsPatterns?: string[];
+
     // Custom AWS S3 endpoint, default Amazon AWS hostname  - amazonaws.com
     customAwsEndpointHostname?: string;
 
@@ -104,6 +107,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
+    retainObjectsPatterns: [],
     enableS3StaticWebsiteHosting: true,
     parallelLimit: 20,
 
