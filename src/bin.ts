@@ -372,20 +372,21 @@ yargs
     .command(
         ['deploy', '$0'],
         "Deploy bucket. If it doesn't exist, it will be created. Otherwise, it will be updated.",
-        (args: yargs.Argv) => {
-            args.option('yes', {
-                alias: 'y',
-                describe: 'Skip confirmation prompt',
-                boolean: true,
-            });
-            args.option('bucket', {
-                alias: 'b',
-                describe: 'Bucket name (if you wish to override default bucket name)',
-            });
-            args.option('userAgent', {
-                describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
-            });
-        },
+        args =>
+            args
+                .option('yes', {
+                    alias: 'y',
+                    describe: 'Skip confirmation prompt',
+                    boolean: true,
+                })
+                .option('bucket', {
+                    alias: 'b',
+                    describe: 'Bucket name (if you wish to override default bucket name)',
+                })
+                .option('userAgent', {
+                    describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any,
         deploy as (args: { yes: boolean; bucket: string; userAgent: string }) => void
     )
     .wrap(yargs.terminalWidth())
