@@ -19,6 +19,8 @@ module.exports = {
                           acl: process.env.ACL != 'NULL' ? process.env.ACL : null,
                       }
                     : {}),
+                removeNonexistentObjects: true,
+                retainObjectsPatterns: ['**/*.retain.js', '**/retain-folder/*'],
             },
         },
         {

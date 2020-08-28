@@ -15,9 +15,9 @@ export enum EnvironmentBoolean {
     True = 'true',
 }
 
-const s3 = new S3({
+export const s3 = new S3({
     region,
-    customUserAgent: 'TestPerms/Admin',
+    customUserAgent: 'TestPerms/Admin+PutObject',
     httpOptions: {
         proxy: process.env.HTTPS_PROXY,
     },

@@ -10,6 +10,7 @@ import {
     generateBucketName,
     Permission,
     resolveSiteDirectory,
+    s3,
 } from './helpers';
 import 'jest-expect-message';
 
@@ -67,6 +68,60 @@ describe('gatsby-plugin-s3', () => {
                 Permission.PutBucketAcl,
                 Permission.PutBucketWebsite,
             ])
+        ).resolves.toBeTruthy();
+    });
+
+    test(`correctly handles non-built files`, async () => {
+        await deploySite('with-redirects', [
+            Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.CreateBucket,
+            Permission.PutBucketAcl,
+            Permission.PutBucketWebsite,
+            Permission.DeleteObject,
+        ]);
+        console.log('[debug]', 'uploads', bucketName);
+        async function createTestFile(Key: string) {
+            await s3
+                .putObject({
+                    Bucket: bucketName,
+                    Key,
+                    Body: `test content for ${Key}`,
+                })
+                .promise();
+        }
+        await createTestFile('file.retain.js');
+        await createTestFile('file.remove.js');
+        await createTestFile('sub-folder/file.retain.js');
+        await createTestFile('sub-folder/file.remove.js');
+        await createTestFile('sub-folder/retain-folder/file.js');
+        await createTestFile('retain-folder/file.js');
+        await deploySite('with-redirects', [
+            Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.CreateBucket,
+            Permission.PutBucketAcl,
+            Permission.PutBucketWebsite,
+            Permission.DeleteObject,
+        ]);
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' }).promise()).resolves.toBeTruthy();
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.remove.js' }).promise()).rejects.toThrow();
+        await expect(
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.retain.js' }).promise()
+        ).resolves.toBeTruthy();
+        await expect(
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.remove.js' }).promise()
+        ).rejects.toThrow();
+        await expect(
+            s3
+                .headObject({
+                    Bucket: bucketName,
+                    Key: 'sub-folder/retain-folder/file.js',
+                })
+                .promise()
+        ).resolves.toBeTruthy();
+        await expect(
+            s3.headObject({ Bucket: bucketName, Key: 'retain-folder/file.js' }).promise()
         ).resolves.toBeTruthy();
     });
 });
