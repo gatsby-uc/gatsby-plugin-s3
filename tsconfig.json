@@ -19,7 +19,8 @@
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-        "baseUrl": "./src"
+        "baseUrl": "./src",
+        "declaration": true
     },
     "include": [
         "./src",
