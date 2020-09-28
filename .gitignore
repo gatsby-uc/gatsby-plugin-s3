@@ -74,6 +74,7 @@ jspm_packages/
 .idea/
 /*.js
 /*.js.map
+/*.d.ts
 docs/build/
 
 /test/

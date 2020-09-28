@@ -106,7 +106,12 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string; userAgent: string }) => {
+export interface DeployArguments {
+    yes?: boolean;
+    bucket?: string;
+    userAgent?: string;
+}
+export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
 
@@ -135,7 +140,7 @@ const deploy = async ({ yes, bucket, userAgent }: { yes: boolean; bucket: string
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
-            customUserAgent: userAgent || '',
+            customUserAgent: userAgent ?? '',
             httpOptions,
         });
 

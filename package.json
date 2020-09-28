@@ -2,7 +2,7 @@
     "name": "gatsby-plugin-s3",
     "version": "0.3.5",
     "description": "Enables you to deploy your gatsby site to a S3 bucket.",
-    "main": "bin.js",
+    "main": "index.js",
     "bin": "bin.js",
     "scripts": {
         "test": "jest",
