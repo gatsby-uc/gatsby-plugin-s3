@@ -1,35 +1,39 @@
 {
-    "name": "gatsby-starter-default",
-    "description": "Gatsby default starter",
-    "version": "1.0.0",
-    "author": "Kyle Mathews <mathews.kyle@gmail.com>",
-    "dependencies": {
-        "gatsby": "^2.20.21",
-        "gatsby-plugin-offline": "^2.0.20",
-        "gatsby-plugin-create-client-paths": "^2.0.3",
-        "gatsby-plugin-s3": "file:../..",
-        "prop-types": "^15.6.2",
-        "react": "^16.6.3",
-        "react-dom": "^16.6.3"
-    },
-    "keywords": [
-        "gatsby"
-    ],
-    "license": "MIT",
-    "scripts": {
-        "build": "gatsby build",
-        "develop": "gatsby develop",
-        "start": "npm run develop",
-        "format": "prettier --write \"src/**/*.js\"",
-        "deploy": "serverless deploy",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/gatsbyjs/gatsby-starter-default"
-    },
-    "devDependencies": {
-        "serverless": "^1.35.1",
-        "serverless-s3-sync": "^1.7.1"
-    }
+  "name": "gatsby-starter-default",
+  "description": "Gatsby default starter",
+  "version": "1.0.0",
+  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+  "dependencies": {
+    "gatsby": "^2.20.21",
+    "gatsby-plugin-offline": "^2.0.20",
+    "gatsby-plugin-create-client-paths": "^2.0.3",
+    "gatsby-plugin-s3": "file:../..",
+    "prop-types": "^15.6.2",
+    "react": "^16.6.3",
+    "react-dom": "^16.6.3",
+    "snyk": "^1.427.2"
+  },
+  "keywords": [
+    "gatsby"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "start": "npm run develop",
+    "format": "prettier --write \"src/**/*.js\"",
+    "deploy": "serverless deploy",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gatsbyjs/gatsby-starter-default"
+  },
+  "devDependencies": {
+    "serverless": "^1.35.1",
+    "serverless-s3-sync": "^1.7.1"
+  },
+  "snyk": true
 }
