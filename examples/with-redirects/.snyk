@@ -1,0 +1,12 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.19.0
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - gatsby > devcert > lodash:
+        patched: '2020-11-17T23:50:12.678Z'
+    - gatsby > gatsby-cli > gatsby-recipes > contentful-management > lodash:
+        patched: '2020-11-17T23:50:12.678Z'
+    - gatsby > gatsby-cli > gatsby-recipes > contentful-management > contentful-sdk-core > lodash:
+        patched: '2020-11-17T23:50:12.678Z'
