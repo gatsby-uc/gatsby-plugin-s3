@@ -92,6 +92,9 @@ export interface S3PluginOptions extends PluginOptions {
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
 
+    // Error Document for S3 Static Site hosting
+    errorDocument?: string;
+
     // Max number of files to upload in parallel.
     parallelLimit?: number;
 }
@@ -109,6 +112,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     removeNonexistentObjects: true,
     retainObjectsPatterns: [],
     enableS3StaticWebsiteHosting: true,
+    errorDocument: '404.html',
     parallelLimit: 20,
 
     // the typing requires this for some reason...
