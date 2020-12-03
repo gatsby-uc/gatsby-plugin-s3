@@ -226,56 +226,61 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
         const isKeyInUse: { [objectKey: string]: boolean } = {};
-
+        const htmlFilesQueue: Array<AsyncFunction<void, Error>> = [];
+        const otherFilesQueue: Array<AsyncFunction<void, Error>> = [];
         stream.on('data', ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
             }
-            uploadQueue.push(
-                asyncify(async () => {
-                    let key = createSafeS3Key(relative(publicDir, path));
-                    if (config.bucketPrefix) {
-                        key = `${config.bucketPrefix}/${key}`;
-                    }
-                    const readStream = fs.createReadStream(path);
-                    const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
-                    const data = await streamToPromise(hashStream);
+            const queueFn = asyncify(async () => {
+                let key = createSafeS3Key(relative(publicDir, path));
+                if (config.bucketPrefix) {
+                    key = `${config.bucketPrefix}/${key}`;
+                }
+                const readStream = fs.createReadStream(path);
+                const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
+                const data = await streamToPromise(hashStream);
 
-                    const tag = `"${data}"`;
-                    const objectUnchanged = keyToETagMap[key] === tag;
+                const tag = `"${data}"`;
+                const objectUnchanged = keyToETagMap[key] === tag;
 
-                    isKeyInUse[key] = true;
+                isKeyInUse[key] = true;
 
-                    if (!objectUnchanged) {
-                        try {
-                            const upload = new S3.ManagedUpload({
-                                service: s3,
-                                params: {
-                                    Bucket: config.bucketName,
-                                    Key: key,
-                                    Body: fs.createReadStream(path),
-                                    ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
-                                    ContentType: mime.getType(path) ?? 'application/octet-stream',
-                                    ...getParams(key, params),
-                                },
-                            });
+                if (!objectUnchanged) {
+                    try {
+                        const upload = new S3.ManagedUpload({
+                            service: s3,
+                            params: {
+                                Bucket: config.bucketName,
+                                Key: key,
+                                Body: fs.createReadStream(path),
+                                ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
+                                ContentType: mime.getType(path) ?? 'application/octet-stream',
+                                ...getParams(key, params),
+                            },
+                        });
 
-                            upload.on('httpUploadProgress', evt => {
-                                spinner.text = chalk`Syncing...
+                        upload.on('httpUploadProgress', evt => {
+                            spinner.text = chalk`Syncing...
 {dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
-                            });
+                        });
 
-                            await upload.promise();
-                            spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-                        } catch (ex) {
-                            console.error(ex);
-                            process.exit(1);
-                        }
+                        await upload.promise();
+                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+                    } catch (ex) {
+                        console.error(ex);
+                        process.exit(1);
                     }
-                })
-            );
+                }
+            });
+            const isHtmlRegex = RegExp('/[^/]+.html$', 'g');
+            const isHtml = isHtmlRegex.exec(path);
+            if (isHtml) {
+                htmlFilesQueue.push(queueFn);
+            } else {
+                otherFilesQueue.push(queueFn);
+            }
         });
-
         const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
         uploadQueue.push(
             ...redirectObjects.map(redirect =>
@@ -332,6 +337,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         );
 
         await streamToPromise(stream as Readable);
+        uploadQueue.push(...otherFilesQueue);
+        uploadQueue.push(...htmlFilesQueue);
         await promisifiedParallelLimit(uploadQueue, config.parallelLimit as number);
 
         if (config.removeNonexistentObjects) {
