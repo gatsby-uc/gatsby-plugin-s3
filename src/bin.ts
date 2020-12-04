@@ -227,7 +227,6 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         const stream = klaw(publicDir);
         const isKeyInUse: { [objectKey: string]: boolean } = {};
         const htmlFilesQueue: Array<AsyncFunction<void, Error>> = [];
-        const otherFilesQueue: Array<AsyncFunction<void, Error>> = [];
         stream.on('data', ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
@@ -278,7 +277,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             if (isHtml) {
                 htmlFilesQueue.push(queueFn);
             } else {
-                otherFilesQueue.push(queueFn);
+                uploadQueue.push(queueFn);
             }
         });
         const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
@@ -335,12 +334,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 })
             )
         );
-
         await streamToPromise(stream as Readable);
-        uploadQueue.push(...otherFilesQueue);
-        uploadQueue.push(...htmlFilesQueue);
         await promisifiedParallelLimit(uploadQueue, config.parallelLimit as number);
-
+        await promisifiedParallelLimit(htmlFilesQueue, config.parallelLimit as number);
         if (config.removeNonexistentObjects) {
             const persistObjects = (config.retainObjectsPatterns ?? []).map(glob =>
                 globToRegExp(glob, { globstar: true, extended: true })
