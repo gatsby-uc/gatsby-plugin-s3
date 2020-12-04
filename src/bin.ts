@@ -26,6 +26,7 @@ import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import proxy from 'proxy-agent';
 import globToRegExp from 'glob-to-regexp';
+import fetch from 'node-fetch';
 
 const pe = new PrettyError();
 
@@ -379,6 +380,15 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             {bold Your website has now been published to:}
             {blue.underline ${config.bucketName}}
             `);
+        }
+        if (process.env.AFTER_DEPLOY_HOOK_URL) {
+            await fetch(process.env.AFTER_DEPLOY_HOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    deployDate: new Date(),
+                }),
+            });
         }
     } catch (ex) {
         spinner.fail('Failed.');
