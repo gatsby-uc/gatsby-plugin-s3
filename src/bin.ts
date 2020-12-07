@@ -26,6 +26,7 @@ import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import proxy from 'proxy-agent';
 import globToRegExp from 'glob-to-regexp';
+import fetch from 'node-fetch';
 
 const pe = new PrettyError();
 
@@ -226,56 +227,60 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         const publicDir = resolve('./public');
         const stream = klaw(publicDir);
         const isKeyInUse: { [objectKey: string]: boolean } = {};
-
+        const htmlFilesQueue: Array<AsyncFunction<void, Error>> = [];
         stream.on('data', ({ path, stats }) => {
             if (!stats.isFile()) {
                 return;
             }
-            uploadQueue.push(
-                asyncify(async () => {
-                    let key = createSafeS3Key(relative(publicDir, path));
-                    if (config.bucketPrefix) {
-                        key = `${config.bucketPrefix}/${key}`;
-                    }
-                    const readStream = fs.createReadStream(path);
-                    const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
-                    const data = await streamToPromise(hashStream);
+            const queueFn = asyncify(async () => {
+                let key = createSafeS3Key(relative(publicDir, path));
+                if (config.bucketPrefix) {
+                    key = `${config.bucketPrefix}/${key}`;
+                }
+                const readStream = fs.createReadStream(path);
+                const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
+                const data = await streamToPromise(hashStream);
 
-                    const tag = `"${data}"`;
-                    const objectUnchanged = keyToETagMap[key] === tag;
+                const tag = `"${data}"`;
+                const objectUnchanged = keyToETagMap[key] === tag;
 
-                    isKeyInUse[key] = true;
+                isKeyInUse[key] = true;
 
-                    if (!objectUnchanged) {
-                        try {
-                            const upload = new S3.ManagedUpload({
-                                service: s3,
-                                params: {
-                                    Bucket: config.bucketName,
-                                    Key: key,
-                                    Body: fs.createReadStream(path),
-                                    ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
-                                    ContentType: mime.getType(path) ?? 'application/octet-stream',
-                                    ...getParams(key, params),
-                                },
-                            });
+                if (!objectUnchanged) {
+                    try {
+                        const upload = new S3.ManagedUpload({
+                            service: s3,
+                            params: {
+                                Bucket: config.bucketName,
+                                Key: key,
+                                Body: fs.createReadStream(path),
+                                ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
+                                ContentType: mime.getType(path) ?? 'application/octet-stream',
+                                ...getParams(key, params),
+                            },
+                        });
 
-                            upload.on('httpUploadProgress', evt => {
-                                spinner.text = chalk`Syncing...
+                        upload.on('httpUploadProgress', evt => {
+                            spinner.text = chalk`Syncing...
 {dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
-                            });
+                        });
 
-                            await upload.promise();
-                            spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-                        } catch (ex) {
-                            console.error(ex);
-                            process.exit(1);
-                        }
+                        await upload.promise();
+                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+                    } catch (ex) {
+                        console.error(ex);
+                        process.exit(1);
                     }
-                })
-            );
+                }
+            });
+            const isHtmlRegex = RegExp('/[^/]+.html$', 'g');
+            const isHtml = isHtmlRegex.exec(path);
+            if (isHtml) {
+                htmlFilesQueue.push(queueFn);
+            } else {
+                uploadQueue.push(queueFn);
+            }
         });
-
         const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
         uploadQueue.push(
             ...redirectObjects.map(redirect =>
@@ -330,10 +335,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 })
             )
         );
-
         await streamToPromise(stream as Readable);
         await promisifiedParallelLimit(uploadQueue, config.parallelLimit as number);
-
+        await promisifiedParallelLimit(htmlFilesQueue, config.parallelLimit as number);
         if (config.removeNonexistentObjects) {
             const persistObjects = (config.retainObjectsPatterns ?? []).map(glob =>
                 globToRegExp(glob, { globstar: true, extended: true })
@@ -376,6 +380,15 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             {bold Your website has now been published to:}
             {blue.underline ${config.bucketName}}
             `);
+        }
+        if (process.env.AFTER_DEPLOY_HOOK_URL) {
+            await fetch(process.env.AFTER_DEPLOY_HOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    deployDate: new Date(),
+                }),
+            });
         }
     } catch (ex) {
         spinner.fail('Failed.');
