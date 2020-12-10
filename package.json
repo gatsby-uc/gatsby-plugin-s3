@@ -10,7 +10,7 @@
     "test": "jest",
     "test:e2e": "jest src/test/e2e.test.ts --ci --runInBand --reporters=default --reporters=jest-junit",
     "prepublish": "npm run build",
-    "build": "tsc --project . && cp package.json dist/package.json",
+    "build": "tsc --project .",
     "typecheck": "tsc --project . --noEmit",
     "develop": "babel --extensions=\".ts\" --out-dir=. src/ -w",
     "snyk-protect": "snyk protect",
