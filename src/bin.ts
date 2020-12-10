@@ -386,7 +386,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    deployDate: new Date(),
+                    newVersion: new Date(),
                 }),
             });
         }
