@@ -86,3 +86,5 @@ junit.xml
 /test-infrastructure/artifacts
 /test-infrastructure/terraform.tfstate
 /test-infrastructure/terraform.tfstate*
+
+dist
