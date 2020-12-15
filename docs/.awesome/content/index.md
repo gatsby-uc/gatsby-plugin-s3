@@ -94,6 +94,11 @@ Default configuration is as follows:
     customAwsEndpointHostname: undefined,
     enableS3StaticWebsiteHosting: true,
     parallelLimit: 20,
+    maxRetries: undefined;
+    connectTimeout: undefined;
+    timeout: undefined;
+    fixedRetryDelay: undefined;
+    verbose: false;
 };
 ```
 

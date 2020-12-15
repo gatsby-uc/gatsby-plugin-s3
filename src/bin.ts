@@ -134,6 +134,29 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         if (process.env.HTTP_PROXY) {
             httpOptions = {
                 agent: proxy(process.env.HTTP_PROXY),
+                ...httpOptions,
+            };
+        }
+
+        if (config.timeout !== undefined) {
+            httpOptions = {
+                timeout: config.timeout,
+                ...httpOptions,
+            };
+        }
+
+        if (config.connectTimeout !== undefined) {
+            httpOptions = {
+                connectTimeout: config.connectTimeout,
+                ...httpOptions,
+            };
+        }
+
+        let retryDelayOptions = {};
+        if (config.fixedRetryDelay !== undefined) {
+            retryDelayOptions = {
+                customBackoff: () => config.fixedRetryDelay,
+                ...retryDelayOptions,
             };
         }
 
@@ -142,6 +165,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             endpoint: config.customAwsEndpointHostname,
             customUserAgent: userAgent ?? '',
             httpOptions,
+            logger: config.verbose ? console : undefined,
+            retryDelayOptions,
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
