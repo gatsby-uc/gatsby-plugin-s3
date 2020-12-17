@@ -103,7 +103,7 @@ export interface S3PluginOptions extends PluginOptions {
     // no impact once the socket has established a connection.
     connectTimeout?: number;
 
-    // The number of milliseconds to wait before giving up on a connection attempt.
+    // Sets the socket to timeout after the specified amount of milliseconds of inactivity on the socket.
     timeout?: number;
 
     // By default an exponential backoff is used for retryable failures

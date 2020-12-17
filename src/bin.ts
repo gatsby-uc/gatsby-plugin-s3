@@ -134,31 +134,15 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         if (process.env.HTTP_PROXY) {
             httpOptions = {
                 agent: proxy(process.env.HTTP_PROXY),
-                ...httpOptions,
             };
         }
 
-        if (config.timeout !== undefined) {
-            httpOptions = {
-                timeout: config.timeout,
-                ...httpOptions,
-            };
-        }
-
-        if (config.connectTimeout !== undefined) {
-            httpOptions = {
-                connectTimeout: config.connectTimeout,
-                ...httpOptions,
-            };
-        }
-
-        let retryDelayOptions = {};
-        if (config.fixedRetryDelay !== undefined) {
-            retryDelayOptions = {
-                customBackoff: () => config.fixedRetryDelay,
-                ...retryDelayOptions,
-            };
-        }
+        httpOptions = {
+            agent: process.env.HTTP_PROXY ? proxy(process.env.HTTP_PROXY) : undefined,
+            timeout: config.timeout,
+            connectTimeout: config.connectTimeout,
+            ...httpOptions,
+        };
 
         const s3 = new S3({
             region: config.region,
@@ -166,7 +150,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             customUserAgent: userAgent ?? '',
             httpOptions,
             logger: config.verbose ? console : undefined,
-            retryDelayOptions,
+            retryDelayOptions: {
+                customBackoff: process.env.fixedRetryDelay ? () => Number(config.fixedRetryDelay) : undefined,
+            },
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
