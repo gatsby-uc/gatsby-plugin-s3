@@ -94,86 +94,91 @@ export const createPagesStatefully: GatsbyNode['createPagesStatefully'] = (
 };
 
 export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOptions: S3PluginOptions) => {
-    const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
-    const { redirects, pages, program }: GatsbyState = store.getState();
+    try {
+        const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
+        const { redirects, pages, program }: GatsbyState = store.getState();
 
-    if (!pluginOptions.hostname !== !pluginOptions.protocol) {
-        // If one of these is provided but not the other
-        throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
-    }
+        if (!pluginOptions.hostname !== !pluginOptions.protocol) {
+            // If one of these is provided but not the other
+            throw new Error(`Please either provide both 'hostname' and 'protocol', or neither of them.`);
+        }
 
-    let rewrites: GatsbyRedirect[] = [];
-    if (pluginOptions.generateMatchPathRewrites) {
-        rewrites = Array.from(pages.values())
-            .filter((page): page is Required<Page> => !!page.matchPath && page.matchPath !== page.path)
-            .map(page => ({
-                // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
-                // the syntax that gatsby invented here does not work with routing rules.
-                // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
-                fromPath: page.matchPath.endsWith('*')
-                    ? page.matchPath.substring(0, page.matchPath.length - 1)
-                    : page.matchPath,
-                toPath: page.path,
-            }));
-    }
+        let rewrites: GatsbyRedirect[] = [];
+        if (pluginOptions.generateMatchPathRewrites) {
+            rewrites = Array.from(pages.values())
+                .filter((page): page is Required<Page> => !!page.matchPath && page.matchPath !== page.path)
+                .map(page => ({
+                    // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
+                    // the syntax that gatsby invented here does not work with routing rules.
+                    // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
+                    fromPath: page.matchPath.endsWith('*')
+                        ? page.matchPath.substring(0, page.matchPath.length - 1)
+                        : page.matchPath,
+                    toPath: page.path,
+                }));
+        }
 
-    if (pluginOptions.mergeCachingParams) {
+        if (pluginOptions.mergeCachingParams) {
+            params = {
+                ...params,
+                ...CACHING_PARAMS,
+            };
+        }
+
         params = {
             ...params,
-            ...CACHING_PARAMS,
+            ...pluginOptions.params,
         };
-    }
 
-    params = {
-        ...params,
-        ...pluginOptions.params,
-    };
+        let routingRules: RoutingRule[] = [];
+        let slsRoutingRules: ServerlessRoutingRule[] = [];
 
-    let routingRules: RoutingRule[] = [];
-    let slsRoutingRules: ServerlessRoutingRule[] = [];
+        const temporaryRedirects = redirects
+            .filter(redirect => redirect.fromPath !== '/')
+            .filter(redirect => !redirect.isPermanent);
 
-    const temporaryRedirects = redirects
-        .filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => !redirect.isPermanent);
+        const permanentRedirects: GatsbyRedirect[] = redirects
+            .filter(redirect => redirect.fromPath !== '/')
+            .filter(redirect => redirect.isPermanent);
 
-    const permanentRedirects: GatsbyRedirect[] = redirects
-        .filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => redirect.isPermanent);
+        if (pluginOptions.generateRoutingRules) {
+            routingRules = [...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites)];
+            if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+                routingRules.push(...getRules(pluginOptions, permanentRedirects));
+            }
+            if (routingRules.length > 50) {
+                throw new Error(
+                    `${routingRules.length} routing rules provided, the number of routing rules 
+    in a website configuration is limited to 50.
+    Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`
+                );
+            }
 
-    if (pluginOptions.generateRoutingRules) {
-        routingRules = [...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites)];
-        if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
-            routingRules.push(...getRules(pluginOptions, permanentRedirects));
+            slsRoutingRules = routingRules.map(({ Redirect: redirect, Condition: condition }) => ({
+                RoutingRuleCondition: condition,
+                RedirectRule: redirect,
+            }));
         }
-        if (routingRules.length > 50) {
-            throw new Error(
-                `${routingRules.length} routing rules provided, the number of routing rules 
-in a website configuration is limited to 50.
-Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`
+
+        fs.writeFileSync(path.join(program.directory, './.cache/s3.routingRules.json'), JSON.stringify(routingRules));
+
+        fs.writeFileSync(
+            path.join(program.directory, './.cache/s3.sls.routingRules.json'),
+            JSON.stringify(slsRoutingRules)
+        );
+
+        if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+            fs.writeFileSync(
+                path.join(program.directory, './.cache/s3.redirectObjects.json'),
+                JSON.stringify(permanentRedirects)
             );
         }
 
-        slsRoutingRules = routingRules.map(({ Redirect: redirect, Condition: condition }) => ({
-            RoutingRuleCondition: condition,
-            RedirectRule: redirect,
-        }));
+        fs.writeFileSync(path.join(program.directory, './.cache/s3.params.json'), JSON.stringify(params));
+
+        fs.writeFileSync(path.join(program.directory, './.cache/s3.config.json'), JSON.stringify(pluginOptions));
+    } catch (err) {
+        console.error(err);
+        throw err;
     }
-
-    fs.writeFileSync(path.join(program.directory, './.cache/s3.routingRules.json'), JSON.stringify(routingRules));
-
-    fs.writeFileSync(
-        path.join(program.directory, './.cache/s3.sls.routingRules.json'),
-        JSON.stringify(slsRoutingRules)
-    );
-
-    if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
-        fs.writeFileSync(
-            path.join(program.directory, './.cache/s3.redirectObjects.json'),
-            JSON.stringify(permanentRedirects)
-        );
-    }
-
-    fs.writeFileSync(path.join(program.directory, './.cache/s3.params.json'), JSON.stringify(params));
-
-    fs.writeFileSync(path.join(program.directory, './.cache/s3.config.json'), JSON.stringify(pluginOptions));
 };
