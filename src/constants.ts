@@ -9,7 +9,11 @@ export const CACHE_FILES = {
     redirectObjects: path.join('.cache', 's3.redirectObjects.json'),
 };
 
-export type GatsbyRedirect = Parameters<Actions['createRedirect']>[0];
+// Non-standard AWS-specific option to use ReplaceKeyPrefixWith rather than ReplaceKeyWith.
+// Using this option forces your redirect to be at bucket-level and so counts towards the
+// limit of 50.
+type GatsbyRedirectExtensions = { prefix?: boolean };
+export type GatsbyRedirect = Parameters<Actions['createRedirect']>[0] & GatsbyRedirectExtensions;
 
 // @ gatsby maintainers, why is this not typed?
 export interface GatsbyState {

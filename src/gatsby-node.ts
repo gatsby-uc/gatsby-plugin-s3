@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
 import { Condition, Redirect, RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
-import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { identity, withoutLeadingSlash, withoutTrailingSlash } from './util';
 import { GatsbyNode, Page } from 'gatsby';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.
@@ -20,17 +20,19 @@ const buildCondition = (redirectPath: string): Condition => {
 };
 
 const buildRedirect = (pluginOptions: S3PluginOptions, route: GatsbyRedirect): Redirect => {
+    const action = route.prefix ? 'ReplaceKeyPrefixWith' : 'ReplaceKeyWith';
+    const trailingSlashTransform = route.prefix ? identity : withoutTrailingSlash;
     if (route.toPath.indexOf('://') > 0) {
         const url = new URL(route.toPath);
         return {
-            ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(url.href.replace(url.origin, ''))),
+            [action]: trailingSlashTransform(withoutLeadingSlash(url.href.replace(url.origin, ''))),
             HttpRedirectCode: route.isPermanent ? '301' : '302',
             Protocol: url.protocol.slice(0, -1),
             HostName: url.hostname,
         };
     }
     return {
-        ReplaceKeyWith: withoutTrailingSlash(withoutLeadingSlash(route.toPath)),
+        [action]: trailingSlashTransform(withoutLeadingSlash(route.toPath)),
         HttpRedirectCode: route.isPermanent ? '301' : '302',
         Protocol: pluginOptions.protocol,
         HostName: pluginOptions.hostname,
@@ -132,18 +134,18 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
     let routingRules: RoutingRule[] = [];
     let slsRoutingRules: ServerlessRoutingRule[] = [];
 
-    const temporaryRedirects = redirects
-        .filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => !redirect.isPermanent);
+    const isBucketLevel = (redirect: GatsbyRedirect) => !redirect.isPermanent || redirect.prefix;
 
-    const permanentRedirects: GatsbyRedirect[] = redirects
+    const bucketLevelRedirects = redirects.filter(redirect => redirect.fromPath !== '/').filter(isBucketLevel);
+
+    const maybeNonBucketLevelRedirects: GatsbyRedirect[] = redirects
         .filter(redirect => redirect.fromPath !== '/')
-        .filter(redirect => redirect.isPermanent);
+        .filter(redirect => !isBucketLevel(redirect));
 
     if (pluginOptions.generateRoutingRules) {
-        routingRules = [...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites)];
+        routingRules = [...getRules(pluginOptions, bucketLevelRedirects), ...getRules(pluginOptions, rewrites)];
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
-            routingRules.push(...getRules(pluginOptions, permanentRedirects));
+            routingRules.push(...getRules(pluginOptions, maybeNonBucketLevelRedirects));
         }
         if (routingRules.length > 50) {
             throw new Error(
@@ -169,7 +171,7 @@ Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration opt
     if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
         fs.writeFileSync(
             path.join(program.directory, './.cache/s3.redirectObjects.json'),
-            JSON.stringify(permanentRedirects)
+            JSON.stringify(maybeNonBucketLevelRedirects)
         );
     }
 
