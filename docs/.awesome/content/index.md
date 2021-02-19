@@ -87,6 +87,7 @@ Default configuration is as follows:
     mergeCachingParams: true,
     generateRoutingRules: true,
     generateRedirectObjectsForPermanentRedirects: false,
+    redirectObjectsMustRevalidate: false,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
