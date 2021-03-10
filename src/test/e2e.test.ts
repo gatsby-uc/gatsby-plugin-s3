@@ -317,3 +317,30 @@ describe('rules-based redirects', () => {
         });
     });
 });
+
+describe('custom error document', () => {
+    beforeAll(async () => {
+        await buildSite('with-redirects', {
+            GATSBY_S3_TARGET_BUCKET: bucketName,
+            GATSBY_S3_ERROR_DOCUMENT: 'not-found.html',
+        });
+        await deploySite('with-redirects', [
+            Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.CreateBucket,
+            Permission.PutBucketAcl,
+            Permission.PutBucketWebsite,
+        ]);
+    });
+
+    test(`uses custom error document`, async () => {
+        const path = `/non-existing`;
+        const response = await fetch(`${testingEndpoint}/non-existing`);
+
+        expect(response.status, `This path should not exist ${testingEndpoint}${path}`).toBe(404);
+
+        const html = await response.text();
+
+        expect(html.indexOf('ALTERNATIVE'), `Wrong error document used`).toBeGreaterThan(0);
+    });
+});
