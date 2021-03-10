@@ -21,6 +21,7 @@ module.exports = {
                     : {}),
                 removeNonexistentObjects: true,
                 retainObjectsPatterns: ['**/*.retain.js', '**/retain-folder/*'],
+                errorDocument: process.env.GATSBY_S3_ERROR_DOCUMENT,
             },
         },
         {
