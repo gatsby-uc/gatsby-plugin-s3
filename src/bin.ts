@@ -439,8 +439,10 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             }
         }
 
-        spinner.text = `Writing object ETags to Cache`;
-        await writeObjectsToCache(objects);
+        if (config.cacheS3ObjectList) {
+            spinner.text = `Writing object ETags to Cache`;
+            await writeObjectsToCache(objects);
+        }
 
         spinner.succeed('Synced.');
         if (config.enableS3StaticWebsiteHosting) {
