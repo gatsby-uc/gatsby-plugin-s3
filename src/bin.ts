@@ -2,7 +2,7 @@
 
 import '@babel/polyfill';
 import 'fs-posix';
-import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
+import S3, { NextToken, RoutingRules } from 'aws-sdk/clients/s3';
 import yargs from 'yargs';
 import { CACHE_FILES, GatsbyRedirect, Params, S3PluginOptions } from './constants';
 import { readJson } from 'fs-extra';
@@ -22,10 +22,12 @@ import inquirer from 'inquirer';
 import { config as awsConfig } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
+import { getS3WebsiteDomainUrl, pick, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import proxy from 'proxy-agent';
 import globToRegExp from 'glob-to-regexp';
+import { EOL } from 'os';
+import readline from 'readline';
 
 const pe = new PrettyError();
 
@@ -37,6 +39,12 @@ const promisifiedParallelLimit: <T, E = Error>(
 ) => // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 Promise<T[]> = util.promisify(parallelLimit) as any;
+
+const promisifiedFs = {
+    exists: util.promisify(fs.exists),
+    open: util.promisify(fs.open),
+    appendFile: util.promisify(fs.appendFile),
+};
 
 const guessRegion = (s3: S3, constraint?: string): string | undefined =>
     constraint ?? s3.config.region ?? awsConfig.region;
@@ -75,8 +83,11 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectList> => {
-    const list: ObjectList = [];
+type CachedS3Object = Pick<S3.Object, 'Key' | 'ETag'>;
+type ObjectMap = Map<CachedS3Object['Key'], CachedS3Object>;
+
+const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectMap> => {
+    const map: ObjectMap = new Map();
 
     let token: NextToken | undefined;
     do {
@@ -89,13 +100,40 @@ const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string |
             .promise();
 
         if (response.Contents) {
-            list.push(...response.Contents);
+            response.Contents.forEach(o => {
+                map.set(o.Key, o);
+            });
         }
 
         token = response.NextContinuationToken;
     } while (token);
 
-    return list;
+    return map;
+};
+
+const loadObjectsFromCache = async (): Promise<ObjectMap | undefined> => {
+    if (!(await promisifiedFs.exists(CACHE_FILES.objectList))) {
+        return undefined;
+    }
+    const map: ObjectMap = new Map();
+    const fileStream = fs.createReadStream(CACHE_FILES.objectList);
+    try {
+        const rl = readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity,
+        });
+
+        for await (const line of rl) {
+            if (/\S/.test(line)) {
+                const obj: CachedS3Object = JSON.parse(line);
+                map.set(obj.Key, obj);
+            }
+        }
+    } finally {
+        fileStream.close();
+    }
+
+    return map.size > 0 ? map : undefined;
 };
 
 const createSafeS3Key = (key: string): string => {
@@ -226,11 +264,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
 
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
-        const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
-        const keyToETagMap = objects.reduce((acc: any, curr) => {
-            acc[curr.Key!] = curr.ETag;
-            return acc;
-        }, {});
+        const objects =
+            (config.cacheS3ObjectList && (await loadObjectsFromCache())) ||
+            (await listAllObjects(s3, config.bucketName, config.bucketPrefix));
 
         spinner.color = 'cyan';
         spinner.text = 'Syncing...';
@@ -253,7 +289,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     const data = await streamToPromise(hashStream);
 
                     const tag = `"${data}"`;
-                    const objectUnchanged = keyToETagMap[key] === tag;
+                    const object = objects.get(key);
+                    const objectUnchanged = object && object.ETag === tag;
 
                     isKeyInUse[key] = true;
 
@@ -276,7 +313,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
 {dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
                             });
 
-                            await upload.promise();
+                            const uploadData = await upload.promise();
+                            objects.set(uploadData.Key, uploadData);
+
                             spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
                         } catch (ex) {
                             console.error(ex);
@@ -306,7 +345,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     const tag = `"${createHash('md5')
                         .update(redirectLocation)
                         .digest('hex')}"`;
-                    const objectUnchanged = keyToETagMap[key] === tag;
+                    const object = objects.get(key);
+                    const objectUnchanged = object && object.ETag === tag;
 
                     isKeyInUse[key] = true;
 
@@ -329,7 +369,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                             },
                         });
 
-                        await upload.promise();
+                        const data = await upload.promise();
+                        objects.set(data.Key, data);
 
                         spinner.text = chalk`Syncing...
 {dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
@@ -349,12 +390,13 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             const persistObjects = (config.retainObjectsPatterns ?? []).map(glob =>
                 globToRegExp(glob, { globstar: true, extended: true })
             );
-            const objectsToRemove = objects
-                .map(obj => ({ Key: obj.Key as string }))
-                .filter(obj => {
-                    if (!obj.Key || isKeyInUse[obj.Key]) return false;
-                    return persistObjects.reduce((result, regexp) => result && !regexp.test(obj.Key), true);
-                });
+            const objectsToRemove: S3.ObjectIdentifierList = [];
+            objects.forEach((_, Key) => {
+                if (!Key || isKeyInUse[Key]) return;
+                if (persistObjects.find(regexp => !regexp.test(Key))) return;
+
+                objectsToRemove.push({ Key });
+            });
 
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
                 const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
@@ -363,7 +405,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     objectsToRemove.length
                 }`;
 
-                await s3
+                const result = await s3
                     .deleteObjects({
                         Bucket: config.bucketName,
                         Delete: {
@@ -372,7 +414,24 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                         },
                     })
                     .promise();
+                if (result.Deleted) {
+                    result.Deleted.forEach(o => {
+                        objects.delete(o.Key);
+                    });
+                }
             }
+        }
+
+        spinner.text = `Writing object ETags to Cache`;
+        const fd = await promisifiedFs.open(CACHE_FILES.objectList, 'w');
+        try {
+            for (let obj of objects.values()) {
+                obj = pick(obj, 'ETag', 'Key');
+                const line = JSON.stringify(obj, undefined, 0);
+                await promisifiedFs.appendFile(fd, line + EOL);
+            }
+        } finally {
+            fs.closeSync(fd);
         }
 
         spinner.succeed('Synced.');
