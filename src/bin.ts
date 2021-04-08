@@ -20,7 +20,7 @@ import minimatch from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
 import { config as awsConfig } from 'aws-sdk';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, pick, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
@@ -44,6 +44,7 @@ const promisifiedFs = {
     exists: util.promisify(fs.exists),
     open: util.promisify(fs.open),
     appendFile: util.promisify(fs.appendFile),
+    rename: util.promisify(fs.rename),
 };
 
 const guessRegion = (s3: S3, constraint?: string): string | undefined =>
@@ -134,6 +135,22 @@ const loadObjectsFromCache = async (): Promise<ObjectMap | undefined> => {
     }
 
     return map.size > 0 ? map : undefined;
+};
+
+const writeObjectsToCache = async (objects: ObjectMap): Promise<void> => {
+    // write to tmp file in case other process is writing at the same time
+    const tmpFile = `${CACHE_FILES.objectList}.tmp${randomBytes(4).toString('hex')}`;
+    const fd = await promisifiedFs.open(tmpFile, 'w');
+    try {
+        for (let obj of objects.values()) {
+            obj = pick(obj, 'ETag', 'Key');
+            const line = JSON.stringify(obj, undefined, 0);
+            await promisifiedFs.appendFile(fd, line + EOL);
+        }
+    } finally {
+        fs.closeSync(fd);
+    }
+    await promisifiedFs.rename(tmpFile, CACHE_FILES.objectList);
 };
 
 const createSafeS3Key = (key: string): string => {
@@ -423,16 +440,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         }
 
         spinner.text = `Writing object ETags to Cache`;
-        const fd = await promisifiedFs.open(CACHE_FILES.objectList, 'w');
-        try {
-            for (let obj of objects.values()) {
-                obj = pick(obj, 'ETag', 'Key');
-                const line = JSON.stringify(obj, undefined, 0);
-                await promisifiedFs.appendFile(fd, line + EOL);
-            }
-        } finally {
-            fs.closeSync(fd);
-        }
+        await writeObjectsToCache(objects);
 
         spinner.succeed('Synced.');
         if (config.enableS3StaticWebsiteHosting) {
@@ -447,6 +455,67 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             {blue.underline ${config.bucketName}}
             `);
         }
+    } catch (ex) {
+        spinner.fail('Failed.');
+        console.error(pe.render(ex));
+        process.exit(1);
+    }
+};
+
+export interface UpdateS3ObjectCacheArguments {
+    bucket?: string;
+    userAgent?: string;
+}
+export const updateS3ObjectCache = async ({ bucket, userAgent }: DeployArguments = {}) => {
+    const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
+
+    try {
+        const config: S3PluginOptions = await readJson(CACHE_FILES.config);
+
+        // Override the bucket name if it is set via command line
+        if (bucket) {
+            config.bucketName = bucket;
+        }
+
+        let httpOptions = {};
+        if (process.env.HTTP_PROXY) {
+            httpOptions = {
+                agent: proxy(process.env.HTTP_PROXY),
+            };
+        }
+
+        httpOptions = {
+            agent: process.env.HTTP_PROXY ? proxy(process.env.HTTP_PROXY) : undefined,
+            timeout: config.timeout,
+            connectTimeout: config.connectTimeout,
+            ...httpOptions,
+        };
+
+        const s3 = new S3({
+            region: config.region,
+            endpoint: config.customAwsEndpointHostname,
+            customUserAgent: userAgent ?? '',
+            httpOptions,
+            logger: config.verbose ? console : undefined,
+            retryDelayOptions: {
+                customBackoff: process.env.fixedRetryDelay ? () => Number(config.fixedRetryDelay) : undefined,
+            },
+        });
+
+        const { exists } = await getBucketInfo(config, s3);
+
+        if (!exists) {
+            throw new Error(`Bucket '${config.bucketName}' does not exist`);
+        }
+
+        spinner.text = 'Listing objects...';
+        spinner.color = 'green';
+        const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
+
+        spinner.text = `Writing object ETags to Cache`;
+        await writeObjectsToCache(objects);
+
+        spinner.succeed('Cache Synced.');
     } catch (ex) {
         spinner.fail('Failed.');
         console.error(pe.render(ex));
@@ -474,6 +543,21 @@ yargs
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 }) as any,
         deploy as (args: { yes: boolean; bucket: string; userAgent: string }) => void
+    )
+    .command(
+        ['update-s3-cache'],
+        "Lists all objects in s3 and updates the local cache of ETags used by the 'cacheS3ObjectList' option",
+        args =>
+            args
+                .option('bucket', {
+                    alias: 'b',
+                    describe: 'Bucket name (if you wish to override default bucket name)',
+                })
+                .option('userAgent', {
+                    describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any,
+        updateS3ObjectCache as (args: { bucket: string; userAgent: string }) => void
     )
     .wrap(yargs.terminalWidth())
     .demandCommand(1, `Pass --help to see all available commands and options.`)
