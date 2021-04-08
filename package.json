@@ -3,7 +3,9 @@
     "version": "0.3.8",
     "description": "Enables you to deploy your gatsby site to a S3 bucket.",
     "main": "index.js",
-    "bin": "bin.js",
+    "bin": {
+        "gatsby-plugin-s3": "bin.js"
+    },
     "scripts": {
         "test": "jest",
         "test:e2e": "jest src/test/e2e.test.ts --ci --runInBand --reporters=default --reporters=jest-junit",
@@ -64,7 +66,7 @@
         "node-fetch": "^2.3.0",
         "oberon-prettier-config": "^1.0.0",
         "prettier": "^1.19.1",
-        "snyk": "^1.361.2",
+        "snyk": "^1.529.0",
         "tslint": "^5.18.0",
         "tslint-config-oberon": "^1.1.1",
         "typescript": "^3.8.3"

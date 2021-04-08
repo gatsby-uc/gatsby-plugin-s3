@@ -5,13 +5,13 @@
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "gatsby": "^3.0.0",
-    "gatsby-plugin-offline": "^2.0.20",
     "gatsby-plugin-create-client-paths": "^2.0.3",
+    "gatsby-plugin-offline": "^2.0.20",
     "gatsby-plugin-s3": "file:../..",
     "prop-types": "^15.6.2",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
-    "snyk": "^1.518.0"
+    "snyk": "^1.529.0"
   },
   "keywords": [
     "gatsby"
