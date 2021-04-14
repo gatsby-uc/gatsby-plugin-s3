@@ -84,7 +84,7 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-type CachedS3Object = Pick<S3.Object, 'Key' | 'ETag'>;
+type CachedS3Object = Pick<S3.Object, 'Key' | 'ETag'> & { mtimeMs?: number };
 type ObjectMap = Map<CachedS3Object['Key'], CachedS3Object>;
 
 const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectMap> => {
@@ -143,7 +143,7 @@ const writeObjectsToCache = async (objects: ObjectMap): Promise<void> => {
     const fd = await promisifiedFs.open(tmpFile, 'w');
     try {
         for (let obj of objects.values()) {
-            obj = pick(obj, 'ETag', 'Key');
+            obj = pick(obj, 'ETag', 'Key', 'mtimeMs');
             const line = JSON.stringify(obj, undefined, 0);
             await promisifiedFs.appendFile(fd, line + EOL);
         }
@@ -301,43 +301,60 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     if (config.bucketPrefix) {
                         key = `${config.bucketPrefix}/${key}`;
                     }
+                    isKeyInUse[key] = true;
+
+                    const object = objects.get(key);
+                    const fileUnchanged = object?.mtimeMs && object.mtimeMs === stats.mtimeMs;
+                    if (fileUnchanged) {
+                        // The file has not been changed on disk since we last uploaded it.  No need to recalculate hash.
+                        return;
+                    }
+                    if (object) {
+                        objects.set(object.Key, {
+                            ...object,
+                            mtimeMs: stats.mtimeMs,
+                        });
+                    }
+
                     const readStream = fs.createReadStream(path);
                     const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
                     const data = await streamToPromise(hashStream);
-
                     const tag = `"${data}"`;
-                    const object = objects.get(key);
                     const objectUnchanged = object && object.ETag === tag;
 
-                    isKeyInUse[key] = true;
+                    if (objectUnchanged) {
+                        // object with exact hash already exists in s3.  Don't upload.
+                        return;
+                    }
 
-                    if (!objectUnchanged) {
-                        try {
-                            const upload = new S3.ManagedUpload({
-                                service: s3,
-                                params: {
-                                    Bucket: config.bucketName,
-                                    Key: key,
-                                    Body: fs.createReadStream(path),
-                                    ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
-                                    ContentType: mime.getType(path) ?? 'application/octet-stream',
-                                    ...getParams(key, params),
-                                },
-                            });
+                    try {
+                        const upload = new S3.ManagedUpload({
+                            service: s3,
+                            params: {
+                                Bucket: config.bucketName,
+                                Key: key,
+                                Body: fs.createReadStream(path),
+                                ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
+                                ContentType: mime.getType(path) ?? 'application/octet-stream',
+                                ...getParams(key, params),
+                            },
+                        });
 
-                            upload.on('httpUploadProgress', evt => {
-                                spinner.text = chalk`Syncing...
+                        upload.on('httpUploadProgress', evt => {
+                            spinner.text = chalk`Syncing...
 {dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
-                            });
+                        });
 
-                            const uploadData = await upload.promise();
-                            objects.set(uploadData.Key, uploadData);
+                        const uploadData = await upload.promise();
+                        objects.set(uploadData.Key, {
+                            ...uploadData,
+                            mtimeMs: stats.mtimeMs,
+                        });
 
-                            spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
-                        } catch (ex) {
-                            console.error(ex);
-                            process.exit(1);
-                        }
+                        spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+                    } catch (ex) {
+                        console.error(ex);
+                        process.exit(1);
                     }
                 })
             );
