@@ -5,7 +5,7 @@
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "dotenv": "^8.2.0",
-    "gatsby": "^2.23.20",
+    "gatsby": "^2.32.8",
     "gatsby-plugin-create-client-paths": "^2.0.3",
     "gatsby-plugin-offline": "^2.0.23",
     "gatsby-plugin-s3": "file:../..",
