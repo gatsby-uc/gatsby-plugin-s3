@@ -4,14 +4,14 @@
   "version": "1.0.0",
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
-    "gatsby": "^2.20.21",
+    "gatsby": "^3.13.0",
     "gatsby-plugin-offline": "^2.0.20",
     "gatsby-plugin-create-client-paths": "^2.0.3",
     "gatsby-plugin-s3": "file:../..",
     "prop-types": "^15.6.2",
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
-    "snyk": "^1.427.2"
+    "snyk": "^1.685.0"
   },
   "keywords": [
     "gatsby"
