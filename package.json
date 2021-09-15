@@ -89,7 +89,7 @@
         "fs-extra": "^7.0.1",
         "fs-posix": "^6.0.0",
         "glob-to-regexp": "^0.4.1",
-        "inquirer": "^6.2.1",
+        "inquirer": "^7.0.5",
         "is-ci": "^2.0.0",
         "klaw": "^3.0.0",
         "mime": "^2.4.0",
