@@ -13,7 +13,7 @@
         "build": "tsc --project .",
         "typecheck": "tsc --project . --noEmit",
         "develop": "babel --extensions=\".ts\" --out-dir=. src/ -w",
-        "snyk-protect": "snyk protect",
+    "snyk-protect": "snyk-protect",
         "prepare": "npm run snyk-protect"
     },
     "repository": {
@@ -66,7 +66,6 @@
         "node-fetch": "^2.3.0",
         "oberon-prettier-config": "^1.0.0",
         "prettier": "^1.19.1",
-        "snyk": "^1.912.0",
         "tslint": "^5.18.0",
         "tslint-config-oberon": "^1.1.1",
         "typescript": "^3.8.3"
@@ -98,7 +97,8 @@
         "pretty-error": "^2.1.1",
         "proxy-agent": "^4.0.0",
         "stream-to-promise": "^2.2.0",
-        "yargs": "^15.4.0"
+        "yargs": "^15.4.0",
+        "@snyk/protect": "latest"
     },
     "jest": {
         "roots": [
