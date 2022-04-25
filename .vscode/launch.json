@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug Jest Tests",
+        "type": "node",
+        "request": "launch",
+        "runtimeArgs": [
+          "--inspect-brk",
+          "${workspaceFolder}/node_modules/jest/bin/jest.js",
+          "--runInBand"
+        ],
+        "cwd": "${workspaceFolder}/gatsby-plugin-s3-e2e-tests",
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen",
+        "port": 9229
+      }
+    ]
+  }

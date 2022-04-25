@@ -1,0 +1,8 @@
+{
+  "packages": [
+    "gatsby-plugin-s3",
+    "gatsby-plugin-s3-*",
+    "examples/*"
+  ],
+  "version": "0.0.0"
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="12" failures="1" time="53.058">
+  <testsuite name="object-based redirects" errors="0" failures="1" skipped="0" timestamp="2022-04-25T12:05:13" time="51.819" tests="12">
+    <testcase classname="object-based redirects caching and content type headers are correctly set for html files" name="object-based redirects caching and content type headers are correctly set for html files" time="1.987">
+    </testcase>
+    <testcase classname="object-based redirects caching and content type headers are correctly set for page-data files" name="object-based redirects caching and content type headers are correctly set for page-data files" time="0.655">
+    </testcase>
+    <testcase classname="object-based redirects caching and content type headers are correctly set for sw.js" name="object-based redirects caching and content type headers are correctly set for sw.js" time="0.645">
+    </testcase>
+    <testcase classname="object-based redirects caching and content type headers are correctly set for static files" name="object-based redirects caching and content type headers are correctly set for static files" time="0.658">
+      <failure>Error: Custom message:
+  Incorrect Cache-Control for /test.txt
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: &quot;public, max-age=31536000, immutable&quot;
+Received: null
+    at Object.&lt;anonymous&gt; (D:\git\gatsby-plugin-s3\gatsby-plugin-s3-e2e-tests\src\e2e.test.ts:202:98)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5)</failure>
+    </testcase>
+    <testcase classname="object-based redirects caching and content type headers are correctly set for js files" name="object-based redirects caching and content type headers are correctly set for js files" time="0.692">
+    </testcase>
+    <testcase classname="object-based redirects caching and content type headers are correctly set for css files" name="object-based redirects caching and content type headers are correctly set for css files" time="0.676">
+    </testcase>
+    <testcase classname="object-based redirects can redirect from root" name="object-based redirects can redirect from root" time="0.68">
+    </testcase>
+    <testcase classname="object-based redirects can redirect temporarily" name="object-based redirects can redirect temporarily" time="0.643">
+    </testcase>
+    <testcase classname="object-based redirects can redirect to a child directory" name="object-based redirects can redirect to a child directory" time="0.689">
+    </testcase>
+    <testcase classname="object-based redirects can redirect client-only routes" name="object-based redirects can redirect client-only routes" time="0.654">
+    </testcase>
+    <testcase classname="object-based redirects can redirect from a path containing special characters" name="object-based redirects can redirect from a path containing special characters" time="0.703">
+    </testcase>
+    <testcase classname="object-based redirects can redirect from a path with a trailing slash" name="object-based redirects can redirect from a path with a trailing slash" time="0.682">
+    </testcase>
+  </testsuite>
+</testsuites>

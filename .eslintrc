@@ -1,8 +1,0 @@
-{
-    "extends": ["oberon"],
-    "rules": {
-        "no-await-in-loop": "off",
-        "no-console": "off",
-        "import/named": "off"
-    }
-}
