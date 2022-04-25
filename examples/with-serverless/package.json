@@ -10,8 +10,7 @@
     "gatsby-plugin-s3": "file:../..",
     "prop-types": "^15.6.2",
     "react": "^16.6.3",
-    "react-dom": "^16.6.3",
-    "snyk": "^1.657.0"
+    "react-dom": "^16.6.3"
   },
   "keywords": [
     "gatsby"
@@ -23,9 +22,7 @@
     "start": "npm run develop",
     "format": "prettier --write \"src/**/*.js\"",
     "deploy": "serverless deploy",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

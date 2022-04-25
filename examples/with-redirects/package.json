@@ -13,9 +13,6 @@
     "react": "^16.6.3",
     "react-dom": "^16.6.3"
   },
-  "devDependencies": {
-    "snyk": "^1.912.0"
-  },
   "keywords": [
     "gatsby"
   ],
@@ -26,9 +23,7 @@
     "start": "npm run develop",
     "format": "prettier --write \"src/**/*.js\"",
     "deploy": "gatsby-plugin-s3 deploy",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
