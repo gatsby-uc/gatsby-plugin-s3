@@ -32,11 +32,11 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: root-npm
+          name: npm-root
           command: 'npm ci --dev'
       - run:
-          name: lerna-bootstrap
-          command: 'npm exec lerna bootstrap'
+          name: npm-projects
+          command: 'npm exec -- lerna exec -- npm ci --dev'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
