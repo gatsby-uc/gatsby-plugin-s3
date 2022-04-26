@@ -52,7 +52,7 @@ jobs:
           at: .
       - run:
           name: lint
-          command: lerna run lint
+          command: npm exec -- lerna run lint
       - store_artifacts:
           prefix: tests
           path: "./reports"
@@ -66,7 +66,7 @@ jobs:
           at: .
       - run:
           name: build
-          command: lerna run build
+          command: npm exec -- lerna run build
       - persist_to_workspace:
           root: .
           paths:
@@ -80,7 +80,7 @@ jobs:
           at: .
       - run:
           name: e2e-tests
-          command: lerna run --scope gatsby-plugin-s3-e2e-tests test
+          command: npm exec -- lerna run --scope gatsby-plugin-s3-e2e-tests test
           environment:
             JEST_JUNIT_OUTPUT: "../reports/e2e-test-results.xml"
       - store_artifacts:
