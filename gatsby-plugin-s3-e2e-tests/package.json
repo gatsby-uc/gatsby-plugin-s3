@@ -7,7 +7,7 @@
         "test": "jest src/e2e.test.ts --ci --runInBand --reporters=default --reporters=jest-junit",
         "prepublish": "npm run build",
         "build": "tsc --project .",
-        "lint": "./node_modules/.bin/eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-e2e-tests-linter-results.xml",
+        "lint": "eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-e2e-tests-linter-results.xml",
         "typecheck": "tsc --project . --noEmit"
     },
     "repository": {

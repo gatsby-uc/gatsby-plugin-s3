@@ -11,7 +11,7 @@
         "build": "tsc --project .",
         "typecheck": "tsc --project . --noEmit",
         "develop": "babel --extensions=\".ts\" --out-dir=. src/ -w",
-        "lint": "./node_modules/.bin/eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-linter-results.xml",
+        "lint": "eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-linter-results.xml",
         "snyk-protect": "snyk-protect",
         "prepare": "npm run snyk-protect"
     },
