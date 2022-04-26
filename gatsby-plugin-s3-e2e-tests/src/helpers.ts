@@ -3,7 +3,7 @@ import path from 'path';
 import { fork } from 'child_process';
 import { Readable } from 'stream';
 import S3, { NextToken } from 'aws-sdk/clients/s3';
-import { default as resolvePackagePath } from 'resolve-package-path';
+import resolvePackagePath from 'resolve-package-path';
 
 // IMPORTANT: Must match what's in test-infrastructure/template.tf
 const bucketPrefix = 'gatsby-plugin-s3-tests-';
