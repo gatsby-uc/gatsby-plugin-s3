@@ -32,7 +32,10 @@ jobs:
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: lerna
+          name: install-lerna
+          command: 'npm install -g lerna@^4.0.0'
+      - run:
+          name: lerna-bootstrap
           command: 'lerna bootstrap'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
