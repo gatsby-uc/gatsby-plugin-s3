@@ -63,11 +63,9 @@ export const onPreBootstrap: GatsbyNode['createPagesStatefully'] = ({ reporter }
     params = {};
 };
 
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
-
 export const createPagesStatefully: GatsbyNode['createPagesStatefully'] = (
     { store, actions: { createPage } },
-    userPluginOptions?: Optional<S3PluginOptions, 'bucketName'> // Workaround for our S3PluginOptions and gatsby's PluginOptions being incompatible
+    userPluginOptions?: S3PluginOptions
 ) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages }: GatsbyState = store.getState();
