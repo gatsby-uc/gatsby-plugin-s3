@@ -36,7 +36,7 @@ jobs:
           command: 'npm ci --dev'
       - run:
           name: lerna-bootstrap
-          command: 'lerna bootstrap'
+          command: 'npm exec lerna bootstrap'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
