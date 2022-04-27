@@ -2,7 +2,7 @@ import { CACHING_PARAMS, DEFAULT_OPTIONS, GatsbyRedirect, GatsbyState, Params, S
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
-import { Condition, Redirect, RoutingRule, RoutingRules } from 'aws-sdk/clients/s3';
+import { Condition, Redirect, RoutingRule, RoutingRules, Types } from 'aws-sdk/clients/s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './util';
 import { GatsbyNode, Page } from 'gatsby';
 
@@ -118,9 +118,19 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
     }
 
     if (pluginOptions.mergeCachingParams) {
+        const prefixedCachingParams = Object.entries(CACHING_PARAMS)
+            .map(
+                ([key, val]) =>
+                    [pluginOptions.bucketPrefix ? `${pluginOptions.bucketPrefix}/${key}` : key, val] as [
+                        string,
+                        Partial<Types.PutObjectRequest>
+                    ]
+            )
+            .reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {});
+
         params = {
             ...params,
-            ...CACHING_PARAMS,
+            ...prefixedCachingParams,
         };
     }
 

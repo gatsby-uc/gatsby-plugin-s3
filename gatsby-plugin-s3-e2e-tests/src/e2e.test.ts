@@ -322,3 +322,51 @@ describe('rules-based redirects', () => {
         });
     });
 });
+
+describe('with pathPrefix', () => {
+    beforeAll(async () => {
+        await buildSite('with-redirects', {
+            GATSBY_S3_TARGET_BUCKET: bucketName,
+            GATSBY_S3_BUCKET_PREFIX: 'prefixed',
+            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.True,
+        });
+        await deploySite('with-redirects', [
+            Permission.CreateBucket,
+            Permission.PutObject,
+            Permission.PutBucketWebsite,
+            Permission.DeleteObject,
+        ]);
+    });
+
+    const headerTests = [
+        {
+            name: 'html files',
+            path: '/prefixed/page-2',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'text/html',
+        },
+        {
+            name: 'page-data files',
+            path: '/prefixed/page-data/index/page-data.json',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'application/json',
+        },
+        {
+            name: 'sw.js',
+            path: '/prefixed/sw.js',
+            cacheControl: 'public, max-age=0, must-revalidate',
+            contentType: 'application/javascript',
+        },
+    ];
+
+    headerTests.forEach(t => {
+        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+            const { path } = t;
+
+            const response = await fetch(`${testingEndpoint}${path}`);
+            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
+            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
+            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+        });
+    });
+});
