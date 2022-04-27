@@ -65,6 +65,9 @@
             "jest-junit"
         ]
     },
+    "jest-junit": {
+        "outputDirectory": "../reports"
+    },
     "private": true,
     "snyk": true
 }
