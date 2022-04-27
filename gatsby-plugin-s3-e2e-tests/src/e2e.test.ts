@@ -268,6 +268,8 @@ describe('rules-based redirects', () => {
         await deploySite('gatsby-plugin-s3-example-with-redirects', [
             Permission.CreateBucket,
             Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
             Permission.DeleteObject,
         ]);
@@ -325,14 +327,16 @@ describe('rules-based redirects', () => {
 
 describe('with pathPrefix', () => {
     beforeAll(async () => {
-        await buildSite('with-redirects', {
+        await buildSite('gatsby-plugin-s3-example-with-redirects', {
             GATSBY_S3_TARGET_BUCKET: bucketName,
             GATSBY_S3_BUCKET_PREFIX: 'prefixed',
             GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.True,
         });
-        await deploySite('with-redirects', [
+        await deploySite('gatsby-plugin-s3-example-with-redirects', [
             Permission.CreateBucket,
             Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
             Permission.DeleteObject,
         ]);
