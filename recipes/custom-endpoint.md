@@ -24,6 +24,7 @@ We'll also link to their documentation with more info on what endpoints to use.
 - Rackspace Cloud: [see the list here](https://developer.rackspace.com/docs/cloud-files/v1/general-api-info/service-access/#service-access)
 - [IBM Cloud](https://cloud.ibm.com/docs/services/cloud-object-storage/api-reference?topic=cloud-object-storage-endpoints) `s3.us.cloud-object-storage.appdomain.cloud` (replace `us` with either `eu` or `ap`)
 - [Dreamhost Dreamobjects](https://help.dreamhost.com/hc/en-us/articles/360001370846-What-DreamObjects-hostname-should-I-use-to-connect-): `objects-us-east-1.dream.io`
-- [Linode Object Storage](https://www.linode.com/docs/platform/object-storage/pricing-and-limitations/#available-locations): `us-east-1.linodeobjects.com` - replace `us-east-1` with the region your bucket is located. 
+- [Linode Object Storage](https://www.linode.com/docs/platform/object-storage/pricing-and-limitations/#available-locations): `us-east-1.linodeobjects.com` - replace `us-east-1` with the region your bucket is located.
+- [OVH Cloud](https://docs.ovh.com/gb/en/public-cloud/getting_started_with_the_swift_S3_API/): `s3.gra.cloud.ovh.net` - replace `gra` with the region your bucket is located. You will need to set up S3 credentials following the tutorial on the link. 
 
 If you have any endpoint hostname you'd like to add to this document, [go here](https://github.com/jariz/gatsby-plugin-s3/edit/master/recipes/custom-endpoint.md).
