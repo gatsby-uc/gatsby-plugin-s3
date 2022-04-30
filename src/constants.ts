@@ -68,6 +68,10 @@ export interface S3PluginOptions extends PluginOptions {
     // https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html
     generateRedirectObjectsForPermanentRedirects?: boolean;
 
+    // Redirect objects should be treated like html files, to avoid caching on the client-side.
+    // Otherwise, replacing a redirect with a real page will continue to redirect until the cache is cleared.
+    redirectObjectsMustRevalidate?: boolean;
+
     // The plugin will create a fake index page if a redirect from the root path is made - as a workaround,
     // Because routing rules can't be applied in that situation
     generateIndexPageForRedirect?: boolean;

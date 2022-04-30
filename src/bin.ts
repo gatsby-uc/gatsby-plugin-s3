@@ -323,6 +323,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                                 Key: key,
                                 Body: redirectLocation,
                                 ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
+                                CacheControl: config.redirectObjectsMustRevalidate ? '' : undefined,
                                 ContentType: 'application/octet-stream',
                                 WebsiteRedirectLocation: redirectLocation,
                                 ...getParams(key, params),
