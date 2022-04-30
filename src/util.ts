@@ -24,3 +24,11 @@ export const getS3WebsiteDomainUrl = (region: string): string => {
     }
     return `s3-website.${region}.amazonaws.com`;
 };
+
+export function pick<T extends Record<string, unknown>, K extends keyof T>(object: T, ...paths: K[]): Pick<T, K> {
+    const newObj = {} as Pick<T, K>;
+    for (const k of paths) {
+        newObj[k] = object[k];
+    }
+    return newObj;
+}

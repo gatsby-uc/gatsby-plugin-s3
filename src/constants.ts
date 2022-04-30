@@ -7,6 +7,7 @@ export const CACHE_FILES = {
     params: path.join('.cache', 's3.params.json'),
     routingRules: path.join('.cache', 's3.routingRules.json'),
     redirectObjects: path.join('.cache', 's3.redirectObjects.json'),
+    objectList: path.join('.cache', 's3.objectList.json'),
 };
 
 export type GatsbyRedirect = Parameters<Actions['createRedirect']>[0];
@@ -91,6 +92,13 @@ export interface S3PluginOptions extends PluginOptions {
     // but could be useful for preventing Cloud formation Stack Drift or suppressing Terraform noise if you don't need
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
+
+    // If true, the list of objects in s3 is stored in a file in the cache directory.
+    // The public directory is compared to that list on deployment instead of scanning
+    // the bucket in s3.
+    // This can be useful for large sites to speed up deployments, by not requiring
+    // them to list all objects in s3 on every deployment.
+    cacheS3ObjectList?: boolean;
 
     // Max number of files to upload in parallel.
     parallelLimit?: number;
