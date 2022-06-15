@@ -4,7 +4,6 @@
     "description": "gatsby-plugin-s3 docs site",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
         "start": "awesomedocs serve",
         "build": "awesomedocs build",
         "deploy": "cd .awesome && npm run deploy && cd .."
@@ -14,5 +13,6 @@
     "license": "ISC",
     "dependencies": {
         "awesomedocs": "^2.0.1"
-    }
+    },
+    "private": true
 }

@@ -1,5 +1,5 @@
 {
     "hooks": {
-        "pre-commit": "npm run typecheck && lint-staged"
+        "pre-commit": "lerna run typecheck && lint-staged"
     }
 }

@@ -1,0 +1,62 @@
+{
+    "name": "gatsby-plugin-s3",
+    "version": "0.3.8",
+    "description": "Enables you to deploy your gatsby site to a S3 bucket.",
+    "main": "index.js",
+    "bin": {
+        "gatsby-plugin-s3": "bin.js"
+    },
+    "scripts": {
+        "prepublish": "npm run build",
+        "build": "tsc --project .",
+        "typecheck": "tsc --project . --noEmit",
+        "develop": "babel --extensions=\".ts\" --out-dir=. src/ -w",
+        "lint": "eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-linter-results.xml",
+        "snyk-protect": "snyk-protect",
+        "prepare": "npm run snyk-protect"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jariz/gatsby-plugin-s3.git"
+    },
+    "keywords": [
+        "gatsby",
+        "gatsby-plugin",
+        "aws",
+        "s3",
+        "aws-sdk"
+    ],
+    "peerDependencies": {
+        "gatsby": ">2.0.0-alpha"
+    },
+    "author": "Jari Zwarts <jarizw@gmail.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/jariz/gatsby-plugin-s3/issues"
+    },
+    "homepage": "https://github.com/jariz/gatsby-plugin-s3#readme",
+    "devDependencies": {
+        "@snyk/protect": "latest",
+        "@types/async": "^2.4.1",
+        "@types/node": "^12.0.2"
+    },
+    "dependencies": {
+        "@babel/polyfill": "^7.8.3",
+        "async": "^2.6.2",
+        "aws-sdk": "^2.814.0",
+        "chalk": "^2.4.1",
+        "fs-extra": "^7.0.1",
+        "fs-posix": "^6.0.0",
+        "inquirer": "^6.5.2",
+        "is-ci": "^2.0.0",
+        "klaw": "^3.0.0",
+        "mime": "^2.4.0",
+        "minimatch": "^3.0.4",
+        "ora": "^3.0.0",
+        "pretty-error": "^2.1.1",
+        "proxy-agent": "^4.0.0",
+        "stream-to-promise": "^2.2.0",
+        "yargs": "^15.4.0"
+    },
+    "snyk": true
+}

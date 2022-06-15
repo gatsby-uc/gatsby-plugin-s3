@@ -5,7 +5,7 @@ orbs:
 executors:
   node:
     docker:
-      - image: circleci/node:12.16
+      - image: cimg/node:16.14.2
     working_directory: /tmp/gatsby-plugin-s3
 
 jobs:
@@ -25,23 +25,18 @@ jobs:
             - run: npm run build
             - run: npm run deploy
   install:
+    working_directory: ~/project
     executor: node
     steps:
       - checkout
       - restore_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}
       - run:
-          name: install-dependencies
+          name: npm-root
           command: 'npm ci --dev'
       - run:
-          name: install-example-dependencies
-          command: 'cd examples/with-redirects && npm ci --dev && cd ../..'
-      - run:
-          name: install-dependencies-again
-          # Not sure why, but for some reason installing the example dependencies uninstalls some of the main package dependencies
-          # Also not sure why, but for some reason installing example dependencies fails if the main package dependencies aren't already installed
-          # So we have to install the main package dependencies twice
-          command: 'npm ci --dev'
+          name: npm-projects
+          command: 'npm exec -- lerna exec -- npm ci --dev'
       - save_cache:
           key: dependency-cache-{{ checksum "package-lock.json" }}-{{ checksum "examples/with-redirects/package-lock.json" }}
           paths:
@@ -57,7 +52,7 @@ jobs:
           at: .
       - run:
           name: lint
-          command: ./node_modules/.bin/eslint "src/**.ts" -f junit -o reports/linter-results.xml
+          command: npm exec -- lerna run lint
       - store_artifacts:
           prefix: tests
           path: "./reports"
@@ -71,7 +66,7 @@ jobs:
           at: .
       - run:
           name: build
-          command: npm run-script build
+          command: npm exec -- lerna run build
       - persist_to_workspace:
           root: .
           paths:
@@ -85,9 +80,9 @@ jobs:
           at: .
       - run:
           name: e2e-tests
-          command: npm run-script test:e2e
+          command: npm exec -- lerna run --scope gatsby-plugin-s3-e2e-tests test
           environment:
-            JEST_JUNIT_OUTPUT: "reports/e2e-test-results.xml"
+            JEST_JUNIT_OUTPUT: "../reports/e2e-test-results.xml"
       - store_artifacts:
           prefix: tests
           path: "./reports"

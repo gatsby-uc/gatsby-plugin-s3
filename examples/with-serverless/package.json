@@ -1,17 +1,16 @@
 {
-  "name": "gatsby-starter-default",
+  "name": "gatsby-plugin-s3-example-with-serverless",
   "description": "Gatsby default starter",
   "version": "1.0.0",
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "gatsby": "^2.20.21",
-    "gatsby-plugin-offline": "^2.0.20",
     "gatsby-plugin-create-client-paths": "^2.0.3",
-    "gatsby-plugin-s3": "file:../..",
+    "gatsby-plugin-offline": "^2.0.20",
+    "gatsby-plugin-s3": "file:../../gatsby-plugin-s3",
     "prop-types": "^15.6.2",
     "react": "^16.6.3",
-    "react-dom": "^16.6.3",
-    "snyk": "^1.427.2"
+    "react-dom": "^16.6.3"
   },
   "keywords": [
     "gatsby"
@@ -22,18 +21,12 @@
     "develop": "gatsby develop",
     "start": "npm run develop",
     "format": "prettier --write \"src/**/*.js\"",
-    "deploy": "serverless deploy",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
+    "deploy": "serverless deploy"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/gatsbyjs/gatsby-starter-default"
   },
-  "devDependencies": {
-    "serverless": "^1.35.1",
-    "serverless-s3-sync": "^1.7.1"
-  },
-  "snyk": true
+  "snyk": true,
+  "private": true
 }

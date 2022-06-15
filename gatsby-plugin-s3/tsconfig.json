@@ -20,7 +20,8 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "baseUrl": "./src",
-        "declaration": true
+        "declaration": true,
+        "skipLibCheck": true
     },
     "include": [
         "./src",

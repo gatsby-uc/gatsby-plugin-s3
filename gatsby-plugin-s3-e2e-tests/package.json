@@ -1,0 +1,73 @@
+{
+    "name": "gatsby-plugin-s3-e2e-tests",
+    "version": "0.0.1",
+    "description": "Test suite for gatsby-plugin-s3.",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest src/e2e.test.ts --ci --runInBand --reporters=default --reporters=jest-junit",
+        "prepublish": "npm run build",
+        "build": "tsc --project .",
+        "lint": "eslint \"src/**.ts\" -f junit -o ../reports/gatsby-plugin-s3-e2e-tests-linter-results.xml",
+        "typecheck": "tsc --project . --noEmit"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jariz/gatsby-plugin-s3.git"
+    },
+    "keywords": [],
+    "author": "Jari Zwarts <jarizw@gmail.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/jariz/gatsby-plugin-s3/issues"
+    },
+    "homepage": "https://github.com/jariz/gatsby-plugin-s3#readme",
+    "dependencies": {
+        "aws-sdk": "^2.814.0",
+        "dotenv": "^6.1.1",
+        "glob": "^7.1.3",
+        "jest": "^25.1.0",
+        "jest-expect-message": "^1.0.2",
+        "jest-junit": "^6.4.0",
+        "node-fetch": "^2.3.0",
+        "resolve-package-path": "^4.0.3",
+        "gatsby-plugin-s3-example-with-redirects": "../examples/with-redirects"
+    },
+    "jest": {
+        "roots": [
+            "<rootDir>"
+        ],
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/.cache/"
+        ],
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js",
+            "json",
+            "jsx",
+            "node"
+        ],
+        "testMatch": [
+            "**/?(*.)+(spec|test).ts"
+        ],
+        "transform": {
+            "^.+\\.tsx?$": "babel-jest"
+        },
+        "setupFiles": [
+            "@babel/polyfill"
+        ],
+        "setupFilesAfterEnv": [
+            "jest-expect-message"
+        ],
+        "reporters": [
+            "default",
+            "jest-junit"
+        ]
+    },
+    "jest-junit": {
+        "outputDirectory": "../reports"
+    },
+    "private": true,
+    "snyk": true
+}

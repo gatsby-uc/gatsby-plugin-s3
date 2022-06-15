@@ -165,3 +165,7 @@ AWS S3 has a limit of 50 Routing Rules that can be applied to a bucket. Unfortun
 the number of 302 (temporary) redirects you can create. For 301 (permanent) redirects, a way to get around the limit is
 [setting the `x-amz-website-redirect-location` header on an empty object](https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html).
 To enable this behavior, set the `generateRedirectObjectsForPermanentRedirects` configuration option to `true`.
+
+## Contributing:
+
+Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for instructions on how to set up your development environment.

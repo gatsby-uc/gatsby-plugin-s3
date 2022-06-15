@@ -3,6 +3,7 @@ import path from 'path';
 import { fork } from 'child_process';
 import { Readable } from 'stream';
 import S3, { NextToken } from 'aws-sdk/clients/s3';
+import resolvePackagePath from 'resolve-package-path';
 
 // IMPORTANT: Must match what's in test-infrastructure/template.tf
 const bucketPrefix = 'gatsby-plugin-s3-tests-';
@@ -116,12 +117,20 @@ export const runScript = (cwd: string, script: string, args: string[], env: Node
     });
 };
 
-export const resolveSiteDirectory = (site: string): string => path.resolve('./examples/', site);
+export function getPackageDirectory(packageName: string, startPath?: string): string {
+    const searchPath = startPath ?? process.cwd();
+    const packageJsonPath = resolvePackagePath(packageName, searchPath);
+    if (!packageJsonPath) {
+        throw new Error(`Failed to resolve package ${packageName} from path "${searchPath}".`);
+    }
+    return path.dirname(packageJsonPath);
+}
 
 export const buildSite = async (site: string, env: NodeJS.ProcessEnv): Promise<string> => {
-    const siteDirectory = resolveSiteDirectory(site);
+    const siteDirectory = getPackageDirectory(site);
+    const gatsbyPath = getPackageDirectory('gatsby', siteDirectory);
     console.debug(`building site ${site}.`);
-    const output = await runScript(siteDirectory, './node_modules/gatsby/dist/bin/gatsby.js', ['build'], env);
+    const output = await runScript(siteDirectory, path.resolve(gatsbyPath, 'dist/bin/gatsby.js'), ['build'], env);
 
     if (output.exitCode) {
         throw new Error(`Failed to build site ${site}, exited with error code ${output.exitCode}`);
@@ -132,14 +141,15 @@ export const buildSite = async (site: string, env: NodeJS.ProcessEnv): Promise<s
 };
 
 export const deploySite = async (site: string, additionalPermissions: Permission[]): Promise<string> => {
-    const siteDirectory = resolveSiteDirectory(site);
+    const siteDirectory = getPackageDirectory(site);
+    const gatsbyPluginS3Path = getPackageDirectory('gatsby-plugin-s3', siteDirectory);
     const userAgent = `TestPerms/${additionalPermissions.join('+')}`;
     // const userAgent = additionalPermissions.map(p => "TestPerms/" + p).join(" ");
     console.log(userAgent);
     console.debug(`deploying site ${site}.`);
     const output = await runScript(
         siteDirectory,
-        './node_modules/gatsby-plugin-s3/bin.js',
+        path.resolve(gatsbyPluginS3Path, 'bin.js'),
         ['-y', '--userAgent', userAgent],
         {}
     );
