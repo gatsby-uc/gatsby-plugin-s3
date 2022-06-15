@@ -70,7 +70,7 @@
         "typescript": "^3.8.3"
     },
     "peerDependencies": {
-        "gatsby": ">2.0.0-alpha"
+        "gatsby": "^3.0.0 || ^2.0.0"
     },
     "author": "Jari Zwarts <jarizw@gmail.com>",
     "license": "MIT",
