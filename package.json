@@ -39,8 +39,6 @@
         "prettier": "^1.19.1",
         "serverless": "^1.35.1",
         "serverless-s3-sync": "^1.7.1",
-        "tslint": "^5.18.0",
-        "tslint-config-oberon": "^1.1.1",
         "typescript": "^3.8.3"
     },
     "dependencies": {
