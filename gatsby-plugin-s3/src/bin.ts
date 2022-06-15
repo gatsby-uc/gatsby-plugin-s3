@@ -44,7 +44,8 @@ const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists:
     try {
         const { $response } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
 
-        const detectedRegion = guessRegion(s3, ($response.data && $response.data.LocationConstraint) || undefined);
+        const responseData = $response.data as S3.GetBucketLocationOutput | null; // Fix type to be possibly `null` instead of possibly `void`
+        const detectedRegion = guessRegion(s3, responseData?.LocationConstraint);
         return {
             exists: true,
             region: detectedRegion,
@@ -226,8 +227,10 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         spinner.text = 'Listing objects...';
         spinner.color = 'green';
         const objects = await listAllObjects(s3, config.bucketName, config.bucketPrefix);
-        const keyToETagMap = objects.reduce((acc: any, curr) => {
-            acc[curr.Key!] = curr.ETag;
+        const keyToETagMap = objects.reduce((acc: { [key: string]: string }, curr) => {
+            if (curr.Key && curr.ETag) {
+                acc[curr.Key] = curr.ETag;
+            }
             return acc;
         }, {});
 
