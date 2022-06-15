@@ -161,7 +161,7 @@ You can deploy your site to a prefix, leaving all other data in the bucket intac
 
 ### AWS S3 Routing Rules Limit
 
-AWS S3 has an undocumented limit on the number of Routing Rules that can be applied to a bucket. Unfortunately this limits
+AWS S3 has a limit of 50 Routing Rules that can be applied to a bucket. Unfortunately this limits
 the number of 302 (temporary) redirects you can create. For 301 (permanent) redirects, a way to get around the limit is
 [setting the `x-amz-website-redirect-location` header on an empty object](https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html).
 To enable this behavior, set the `generateRedirectObjectsForPermanentRedirects` configuration option to `true`.
