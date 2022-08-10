@@ -290,8 +290,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         });
 
         const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
-        uploadQueue.push(
-            ...redirectObjects.map(redirect =>
+        redirectObjects.forEach(redirect =>
+            uploadQueue.push(
                 asyncify(async () => {
                     const { fromPath, toPath: redirectPath } = redirect;
                     const redirectLocation = base ? resolveUrl(base, redirectPath) : redirectPath;
