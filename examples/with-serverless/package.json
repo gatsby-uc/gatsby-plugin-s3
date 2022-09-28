@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
-    "gatsby": "^2.20.21",
+    "gatsby": "^4.0.0",
     "gatsby-plugin-create-client-paths": "^2.0.3",
     "gatsby-plugin-offline": "^2.0.20",
     "gatsby-plugin-s3": "file:../../gatsby-plugin-s3",
