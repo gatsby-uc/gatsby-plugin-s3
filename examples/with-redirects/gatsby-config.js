@@ -22,6 +22,8 @@ module.exports = {
                     : {}),
                 removeNonexistentObjects: true,
                 retainObjectsPatterns: ['**/*.retain.js', '**/retain-folder/*'],
+                indexDocumentSuffix: process.env.GATSBY_S3_INDEX_DOCUMENT_SUFFIX || 'index.html',
+                errorDocumentKey: process.env.GATSBY_S3_ERROR_DOCUMENT_KEY || '404.html',
             },
         },
         {

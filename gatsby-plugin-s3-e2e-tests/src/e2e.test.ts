@@ -374,3 +374,28 @@ describe('with pathPrefix', () => {
         });
     });
 });
+
+describe('custom error document', () => {
+    beforeAll(async () => {
+        await buildSite('gatsby-plugin-s3-example-with-redirects', {
+            GATSBY_S3_TARGET_BUCKET: bucketName,
+            GATSBY_S3_ERROR_DOCUMENT_KEY: 'another404.html',
+        });
+        await deploySite('gatsby-plugin-s3-example-with-redirects', [
+            Permission.PutObject,
+            Permission.PutObjectAcl,
+            Permission.CreateBucket,
+            Permission.PutBucketAcl,
+            Permission.PutBucketWebsite,
+        ]);
+    });
+
+    test(`uses custom error document`, async () => {
+        const path = `/non-existing`;
+        const fullPath = `${testingEndpoint}${path}`;
+        const response = await fetch(fullPath);
+        expect(response.status, `This path should not exist ${fullPath}`).toBe(404);
+        const html = await response.text();
+        expect(html.indexOf('ANOTHER'), `Wrong error document used`).toBeGreaterThan(0);
+    });
+});
