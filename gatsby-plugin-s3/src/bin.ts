@@ -209,10 +209,10 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 Bucket: config.bucketName,
                 WebsiteConfiguration: {
                     IndexDocument: {
-                        Suffix: 'index.html',
+                        Suffix: config.indexDocumentSuffix ?? 'index.html',
                     },
                     ErrorDocument: {
-                        Key: '404.html',
+                        Key: config.errorDocumentKey ?? '404.html',
                     },
                 },
             };

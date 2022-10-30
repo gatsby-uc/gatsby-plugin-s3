@@ -92,6 +92,13 @@ export interface S3PluginOptions extends PluginOptions {
     // the static website hosting functionality.
     enableS3StaticWebsiteHosting?: boolean;
 
+    // Index document suffix. See https://docs.aws.amazon.com/AmazonS3/latest/API/API_IndexDocument.html.
+    indexDocumentSuffix?: string;
+
+    // Error document object key name to use when a 4XX class error occurs.
+    // See https://docs.aws.amazon.com/AmazonS3/latest/API/API_ErrorDocument.html.
+    errorDocumentKey?: string;
+
     // Max number of files to upload in parallel.
     parallelLimit?: number;
 
