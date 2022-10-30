@@ -391,10 +391,9 @@ describe('custom error document', () => {
     });
 
     test(`uses custom error document`, async () => {
-        const path = `/non-existing`;
-        const fullPath = `${testingEndpoint}${path}`;
-        const response = await fetch(fullPath);
-        expect(response.status, `This path should not exist ${fullPath}`).toBe(404);
+        const path = `${testingEndpoint}/random`;
+        const response = await fetch(path);
+        expect(response.status, `This path should not exist ${path}`).toBe(404);
         const html = await response.text();
         expect(html.indexOf('ANOTHER'), `Wrong error document used`).toBeGreaterThan(0);
     });
