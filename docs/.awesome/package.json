@@ -23,7 +23,7 @@
     "gatsby-plugin-typescript": "^2.0.0",
     "gatsby-remark-prismjs": "^3.3.0",
     "gatsby-source-filesystem": "^2.0.4",
-    "gatsby-transformer-remark": "^2.1.12",
+    "gatsby-transformer-remark": "^5.25.1",
     "gatsby-transformer-yaml": "^2.1.5",
     "glamor": "^2.20.40",
     "prismjs": "^1.27.0",
