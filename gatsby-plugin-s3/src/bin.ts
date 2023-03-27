@@ -222,6 +222,11 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             }
 
             await s3.putBucketWebsite(websiteConfig).promise();
+
+            const publicBlockConfig: S3.Types.DeletePublicAccessBlockRequest = {
+                Bucket: config.bucketName,
+            };
+            await s3.deletePublicAccessBlock(publicBlockConfig).promise();
         }
 
         spinner.text = 'Listing objects...';
