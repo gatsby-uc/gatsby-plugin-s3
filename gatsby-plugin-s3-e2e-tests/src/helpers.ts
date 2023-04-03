@@ -35,6 +35,7 @@ export enum Permission {
     DeleteObject = 'DeleteObject',
     CreateBucket = 'CreateBucket',
     PutBucketAcl = 'PutBucketAcl',
+    PutBucketPublicAccessBlock = 'PutBucketPublicAccessBlock',
 }
 
 export const emptyBucket = async (bucketName: string): Promise<void> => {

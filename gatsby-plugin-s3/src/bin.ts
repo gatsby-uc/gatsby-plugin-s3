@@ -202,6 +202,12 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 };
             }
             await s3.createBucket(createParams).promise();
+            if (config.enableS3StaticWebsiteHosting) {
+                const publicBlockConfig: S3.Types.DeletePublicAccessBlockRequest = {
+                    Bucket: config.bucketName,
+                };
+                await s3.deletePublicAccessBlock(publicBlockConfig).promise();
+            }
         }
 
         if (config.enableS3StaticWebsiteHosting) {

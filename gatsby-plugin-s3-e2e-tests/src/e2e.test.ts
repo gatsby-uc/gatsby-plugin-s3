@@ -59,6 +59,7 @@ describe('gatsby-plugin-s3', () => {
                 Permission.PutObject,
                 Permission.PutBucketAcl,
                 Permission.PutBucketWebsite,
+                Permission.PutBucketPublicAccessBlock,
             ])
         ).rejects.toThrow();
     });
@@ -71,6 +72,7 @@ describe('gatsby-plugin-s3', () => {
                 Permission.CreateBucket,
                 Permission.PutBucketAcl,
                 Permission.PutBucketWebsite,
+                Permission.PutBucketPublicAccessBlock,
             ])
         ).resolves.toBeTruthy();
     });
@@ -82,6 +84,7 @@ describe('gatsby-plugin-s3', () => {
             Permission.CreateBucket,
             Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
+            Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
         console.log('[debug]', 'uploads', bucketName);
@@ -106,6 +109,7 @@ describe('gatsby-plugin-s3', () => {
             Permission.CreateBucket,
             Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
+            Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
         await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' }).promise()).resolves.toBeTruthy();
@@ -143,6 +147,7 @@ describe('object-based redirects', () => {
             Permission.CreateBucket,
             Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
+            Permission.PutBucketPublicAccessBlock,
         ]);
     });
 
@@ -271,6 +276,7 @@ describe('rules-based redirects', () => {
             Permission.PutObjectAcl,
             Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
+            Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
     });
@@ -338,6 +344,7 @@ describe('with pathPrefix', () => {
             Permission.PutObjectAcl,
             Permission.PutBucketAcl,
             Permission.PutBucketWebsite,
+            Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
     });
