@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "dotenv": "^8.2.0",
-    "gatsby": "^2.19.28",
+    "gatsby": "^5.8.1",
     "gatsby-plugin-glamor": "^2.0.9",
     "gatsby-plugin-react-helmet": "^3.0.0",
     "gatsby-plugin-s3": "^0.3.2",
