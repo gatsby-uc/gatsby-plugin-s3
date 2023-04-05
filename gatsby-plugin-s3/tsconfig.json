@@ -21,7 +21,8 @@
         "resolveJsonModule": true,
         "baseUrl": "./src",
         "declaration": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "newLine": "lf",
     },
     "include": [
         "./src",
