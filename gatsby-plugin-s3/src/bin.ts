@@ -300,7 +300,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             uploadQueue.push(
                 asyncify(async () => {
                     const { fromPath, toPath: redirectPath } = redirect;
-                    const redirectLocation = base ? resolveUrl(base, redirectPath) : redirectPath;
+                    const redirectLocation = encodeURI(base ? resolveUrl(base, redirectPath) : redirectPath);
 
                     let key = withoutLeadingSlash(fromPath);
                     if (key.endsWith('/')) {
