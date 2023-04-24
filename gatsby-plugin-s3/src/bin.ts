@@ -218,7 +218,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                         Suffix: 'index.html',
                     },
                     ErrorDocument: {
-                        Key: '404.html',
+                        Key: config.bucketPrefix ? `${config.bucketPrefix}/404.html` : '404.html',
                     },
                 },
             };
