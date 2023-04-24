@@ -31,7 +31,7 @@
     "react-dom": "^16.5.2",
     "react-helmet": "^5.2.0",
     "typescript": "^3.0.3",
-    "yaml": "^1.0.1"
+    "yaml": "^2.2.2"
   },
   "devDependencies": {
     "@types/node": "^12.0.2",
