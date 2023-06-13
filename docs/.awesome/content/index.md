@@ -93,6 +93,8 @@ Default configuration is as follows:
     retainObjectsPatterns: [],
     customAwsEndpointHostname: undefined,
     enableS3StaticWebsiteHosting: true,
+    indexDocumentSuffix: 'index.html',
+    errorDocumentKey: '404.html',
     parallelLimit: 20,
     maxRetries: undefined;
     connectTimeout: undefined;
