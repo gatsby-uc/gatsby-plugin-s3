@@ -11,10 +11,6 @@ module.exports = {
                 bucketName: 'gatsby-plugin-s3-dev-serverless',
                 region: 'eu-west-1'
             },
-        },
-        {
-            resolve: `gatsby-plugin-create-client-paths`,
-            options: { prefixes: [`/client-only/*`] },
         }
     ]
 };
