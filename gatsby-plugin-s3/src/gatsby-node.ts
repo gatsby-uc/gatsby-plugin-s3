@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
 import { Condition, Redirect, RoutingRule, RoutingRules, Types } from 'aws-sdk/clients/s3';
-import { withoutLeadingSlash, withoutTrailingSlash } from './util';
+import { withoutLeadingSlash, withoutTrailingSlash } from './utilities';
 import { GatsbyNode, Page } from 'gatsby';
 
 // for whatever reason, the keys of the RoutingRules object in the SDK and the actual API differ.

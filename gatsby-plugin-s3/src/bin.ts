@@ -3,12 +3,13 @@
 import '@babel/polyfill';
 import 'fs-posix';
 import AWS_S3, {
-    S3,
-    PutObjectRequest,
     _Object as S3Object,
     CreateBucketRequest,
     DeletePublicAccessBlockRequest,
-    PutBucketWebsiteRequest
+    ListObjectsV2CommandOutput,
+    PutBucketWebsiteRequest,
+    PutObjectRequest,
+    S3
 } from "@aws-sdk/client-s3";
 import yargs from 'yargs';
 import { CACHE_FILES, DEFAULT_OPTIONS, GatsbyRedirect, Params, S3PluginOptions } from './constants';
@@ -29,15 +30,13 @@ import inquirer from 'inquirer';
 import { config as awsConfig } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
-import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
+import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './utilities';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
 import { ProxyAgent } from 'proxy-agent';
 import { Provider } from '@smithy/types';
 import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
-import { StandardRetryStrategy } from '@aws-sdk/util-retry';
-import { ConfiguredRetryStrategy } from "@aws-sdk/util-retry/dist-types/ConfiguredRetryStrategy";
+import { ConfiguredRetryStrategy, StandardRetryStrategy } from '@aws-sdk/util-retry';
 import { Upload } from "@aws-sdk/lib-storage";
-import { ListObjectsV2CommandOutput } from "@aws-sdk/client-s3/dist-types/commands/ListObjectsV2Command";
 
 const pe = new PrettyError();
 
@@ -46,8 +45,9 @@ const OBJECTS_TO_REMOVE_PER_REQUEST = 1000;
 const promisifiedParallelLimit: <T, E = Error>(
     tasks: Array<AsyncFunction<T, E>>,
     limit: number
-) => // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+) =>
+    // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Promise<T[]> = util.promisify(parallelLimit) as any;
 
 const provideValue = async (provider: string | Provider<string> | undefined): Promise<string | undefined> => {
@@ -203,7 +203,9 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             ]);
 
             if (!confirm) {
-                throw new Error('User aborted!');
+                console.error('User aborted!');
+                process.exit(1);
+                return;
             }
             spinner.start();
         }
