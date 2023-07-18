@@ -110,9 +110,6 @@ export interface S3PluginOptions extends PluginOptions {
     // Use this option to use a fixed retry delay instead of exponential for particularly flaky connections
     fixedRetryDelay?: number;
 
-    // Max number of retry attempts.
-    maxRetryAttempts?: number;
-
     // Whether or not the plugin should output verbose logs from S3 uploads
     verbose?: boolean;
 }
@@ -131,7 +128,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     retainObjectsPatterns: [],
     enableS3StaticWebsiteHosting: true,
     parallelLimit: 20,
-    maxRetryAttempts: 3,
+    maxRetries: 3,
 
     // the typing requires this for some reason...
     plugins: [],

@@ -158,7 +158,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         }
 
         const agent = makeAgent()
-        const maxRetryAttempts = config.maxRetryAttempts || DEFAULT_OPTIONS.maxRetries as number
+        const maxRetries = config.maxRetries || DEFAULT_OPTIONS.maxRetries as number
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
@@ -171,8 +171,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             }),
             logger: config.verbose ? console : undefined,
             retryStrategy: config.fixedRetryDelay
-                ? new ConfiguredRetryStrategy(maxRetryAttempts, config.fixedRetryDelay)
-                : new StandardRetryStrategy(maxRetryAttempts),
+                ? new ConfiguredRetryStrategy(maxRetries, config.fixedRetryDelay)
+                : new StandardRetryStrategy(maxRetries),
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
