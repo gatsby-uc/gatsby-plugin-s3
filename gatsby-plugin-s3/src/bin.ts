@@ -2,9 +2,16 @@
 
 import '@babel/polyfill';
 import 'fs-posix';
-import S3, { NextToken, ObjectList, RoutingRules } from 'aws-sdk/clients/s3';
+import AWS_S3, {
+    S3,
+    PutObjectRequest,
+    _Object as S3Object,
+    CreateBucketRequest,
+    DeletePublicAccessBlockRequest,
+    PutBucketWebsiteRequest
+} from "@aws-sdk/client-s3";
 import yargs from 'yargs';
-import { CACHE_FILES, GatsbyRedirect, Params, S3PluginOptions } from './constants';
+import { CACHE_FILES, DEFAULT_OPTIONS, GatsbyRedirect, Params, S3PluginOptions } from './constants';
 import { readJson } from 'fs-extra';
 import klaw from 'klaw';
 import PrettyError from 'pretty-error';
@@ -16,7 +23,7 @@ import { join, relative, resolve, sep } from 'path';
 import { resolve as resolveUrl } from 'url';
 import fs from 'fs';
 import util from 'util';
-import minimatch from 'minimatch';
+import { minimatch } from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
 import { config as awsConfig } from 'aws-sdk';
@@ -24,7 +31,13 @@ import { createHash } from 'crypto';
 import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
 import { AsyncFunction, asyncify, parallelLimit } from 'async';
-import proxy from 'proxy-agent';
+import { ProxyAgent } from 'proxy-agent';
+import { Provider } from '@smithy/types';
+import { NodeHttpHandler } from '@aws-sdk/node-http-handler';
+import { StandardRetryStrategy } from '@aws-sdk/util-retry';
+import { ConfiguredRetryStrategy } from "@aws-sdk/util-retry/dist-types/ConfiguredRetryStrategy";
+import { Upload } from "@aws-sdk/lib-storage";
+import { ListObjectsV2CommandOutput } from "@aws-sdk/client-s3/dist-types/commands/ListObjectsV2Command";
 
 const pe = new PrettyError();
 
@@ -35,17 +48,24 @@ const promisifiedParallelLimit: <T, E = Error>(
     limit: number
 ) => // Have to cast this due to https://github.com/DefinitelyTyped/DefinitelyTyped/issues/20497
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-Promise<T[]> = util.promisify(parallelLimit) as any;
+    Promise<T[]> = util.promisify(parallelLimit) as any;
 
-const guessRegion = (s3: S3, constraint?: string): string | undefined =>
-    constraint ?? s3.config.region ?? awsConfig.region;
+const provideValue = async (provider: string | Provider<string> | undefined): Promise<string | undefined> => {
+    if (!provider) {
+        return undefined
+    }
+    if (typeof provider === 'string') {
+        return provider;
+    }
+    return provider();
+}
+
+const guessRegion = async (s3: S3, constraint?: string): Promise<string | undefined> => provideValue(constraint ?? s3.config.region ?? awsConfig.region);
 
 const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
     try {
-        const { $response } = await s3.getBucketLocation({ Bucket: config.bucketName }).promise();
-
-        const responseData = $response.data as S3.GetBucketLocationOutput | null; // Fix type to be possibly `null` instead of possibly `void`
-        const detectedRegion = guessRegion(s3, responseData?.LocationConstraint);
+        const responseData = await s3.getBucketLocation({ Bucket: config.bucketName });
+        const detectedRegion = await guessRegion(s3, responseData?.LocationConstraint);
         return {
             exists: true,
             region: detectedRegion,
@@ -54,14 +74,14 @@ const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists:
         if (ex.code === 'NoSuchBucket') {
             return {
                 exists: false,
-                region: guessRegion(s3),
+                region: await guessRegion(s3),
             };
         }
         throw ex;
     }
 };
 
-const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequest> => {
+const getParams = (path: string, params: Params): Partial<PutObjectRequest> => {
     let returned = {};
     for (const key of Object.keys(params)) {
         if (minimatch(path, key)) {
@@ -75,18 +95,17 @@ const getParams = (path: string, params: Params): Partial<S3.Types.PutObjectRequ
     return returned;
 };
 
-const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<ObjectList> => {
-    const list: ObjectList = [];
+const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<Array<S3Object>> => {
+    const list: Array<S3Object> = [];
 
-    let token: NextToken | undefined;
+    let token: string | undefined = undefined;
     do {
-        const response = await s3
+        const response: ListObjectsV2CommandOutput = await s3
             .listObjectsV2({
                 Bucket: bucketName,
                 ContinuationToken: token,
                 Prefix: bucketPrefix,
-            })
-            .promise();
+            });
 
         if (response.Contents) {
             list.push(...response.Contents);
@@ -111,6 +130,14 @@ export interface DeployArguments {
     bucket?: string;
     userAgent?: string;
 }
+
+export const makeAgent = (): ProxyAgent | undefined => {
+    const proxy = process.env.HTTP_PROXY;
+    return proxy
+        ? new ProxyAgent({ getProxyForUrl: () => proxy })
+        : undefined;
+}
+
 export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
@@ -120,7 +147,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
     try {
         const config: S3PluginOptions = await readJson(CACHE_FILES.config);
         const params: Params = await readJson(CACHE_FILES.params);
-        const routingRules: RoutingRules = await readJson(CACHE_FILES.routingRules);
+        const routingRules: Array<AWS_S3.RoutingRule> = await readJson(CACHE_FILES.routingRules);
         const redirectObjects: GatsbyRedirect[] = fs.existsSync(CACHE_FILES.redirectObjects)
             ? await readJson(CACHE_FILES.redirectObjects)
             : [];
@@ -130,29 +157,22 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             config.bucketName = bucket;
         }
 
-        let httpOptions = {};
-        if (process.env.HTTP_PROXY) {
-            httpOptions = {
-                agent: proxy(process.env.HTTP_PROXY),
-            };
-        }
-
-        httpOptions = {
-            agent: process.env.HTTP_PROXY ? proxy(process.env.HTTP_PROXY) : undefined,
-            timeout: config.timeout,
-            connectTimeout: config.connectTimeout,
-            ...httpOptions,
-        };
-
+        const agent = makeAgent()
+        const maxRetryAttempts = config.maxRetryAttempts || DEFAULT_OPTIONS.maxRetries as number
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
             customUserAgent: userAgent ?? '',
-            httpOptions,
+            requestHandler: new NodeHttpHandler({
+                httpAgent: agent,
+                httpsAgent: agent,
+                requestTimeout: config.timeout,
+                connectionTimeout: config.connectTimeout,
+            }),
             logger: config.verbose ? console : undefined,
-            retryDelayOptions: {
-                customBackoff: process.env.fixedRetryDelay ? () => Number(config.fixedRetryDelay) : undefined,
-            },
+            retryStrategy: config.fixedRetryDelay
+                ? new ConfiguredRetryStrategy(maxRetryAttempts, config.fixedRetryDelay)
+                : new StandardRetryStrategy(maxRetryAttempts),
         });
 
         const { exists, region } = await getBucketInfo(config, s3);
@@ -166,13 +186,13 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             console.log(chalk`
     {underline Please review the following:} ({dim pass -y next time to skip this})
 
-    Deploying to bucket: {cyan.bold ${config.bucketName}}
-    In region: {yellow.bold ${region ?? 'UNKNOWN!'}}
+    Deploying to bucket: {cyan.bold ${ config.bucketName }}
+    In region: {yellow.bold ${ region ?? 'UNKNOWN!' }}
     Gatsby will: ${
-        !exists
-            ? chalk`{bold.greenBright CREATE}`
-            : chalk`{bold.blueBright UPDATE} {dim (any existing website configuration will be overwritten!)}`
-    }
+                !exists
+                    ? chalk`{bold.greenBright CREATE}`
+                    : chalk`{bold.blueBright UPDATE} {dim (any existing website configuration will be overwritten!)}`
+            }
 `);
             const { confirm } = await inquirer.prompt([
                 {
@@ -192,7 +212,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         spinner.color = 'yellow';
 
         if (!exists) {
-            const createParams: S3.Types.CreateBucketRequest = {
+            const createParams: CreateBucketRequest = {
                 Bucket: config.bucketName,
                 ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
             };
@@ -201,17 +221,17 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     LocationConstraint: config.region,
                 };
             }
-            await s3.createBucket(createParams).promise();
+            await s3.createBucket(createParams);
             if (config.enableS3StaticWebsiteHosting) {
-                const publicBlockConfig: S3.Types.DeletePublicAccessBlockRequest = {
+                const publicBlockConfig: DeletePublicAccessBlockRequest = {
                     Bucket: config.bucketName,
                 };
-                await s3.deletePublicAccessBlock(publicBlockConfig).promise();
+                await s3.deletePublicAccessBlock(publicBlockConfig);
             }
         }
 
         if (config.enableS3StaticWebsiteHosting) {
-            const websiteConfig: S3.Types.PutBucketWebsiteRequest = {
+            const websiteConfig: PutBucketWebsiteRequest = {
                 Bucket: config.bucketName,
                 WebsiteConfiguration: {
                     IndexDocument: {
@@ -220,14 +240,11 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     ErrorDocument: {
                         Key: '404.html',
                     },
+                    ...(routingRules.length ? { RoutingRules: routingRules } : {}),
                 },
             };
 
-            if (routingRules.length) {
-                websiteConfig.WebsiteConfiguration.RoutingRules = routingRules;
-            }
-
-            await s3.putBucketWebsite(websiteConfig).promise();
+            await s3.putBucketWebsite(websiteConfig);
         }
 
         spinner.text = 'Listing objects...';
@@ -254,21 +271,21 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                 asyncify(async () => {
                     let key = createSafeS3Key(relative(publicDir, path));
                     if (config.bucketPrefix) {
-                        key = `${config.bucketPrefix}/${key}`;
+                        key = `${ config.bucketPrefix }/${ key }`;
                     }
                     const readStream = fs.createReadStream(path);
                     const hashStream = readStream.pipe(createHash('md5').setEncoding('hex'));
                     const data = await streamToPromise(hashStream);
 
-                    const tag = `"${data}"`;
+                    const tag = `"${ data }"`;
                     const objectUnchanged = keyToETagMap[key] === tag;
 
                     isKeyInUse[key] = true;
 
                     if (!objectUnchanged) {
                         try {
-                            const upload = new S3.ManagedUpload({
-                                service: s3,
+                            const upload = new Upload({
+                                client: s3,
                                 params: {
                                     Bucket: config.bucketName,
                                     Key: key,
@@ -281,11 +298,11 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
 
                             upload.on('httpUploadProgress', evt => {
                                 spinner.text = chalk`Syncing...
-{dim   Uploading {cyan ${key}} ${evt.loaded.toString()}/${evt.total.toString()}}`;
+{dim   Uploading {cyan ${ key }} ${ evt.loaded?.toString() }/${ evt.total?.toString() }}`;
                             });
 
-                            await upload.promise();
-                            spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${key}}}`;
+                            await upload.done();
+                            spinner.text = chalk`Syncing...\n{dim   Uploaded {cyan ${ key }}}`;
                         } catch (ex) {
                             console.error(ex);
                             process.exit(1);
@@ -295,7 +312,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             );
         });
 
-        const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
+        const base = config.protocol && config.hostname ? `${ config.protocol }://${ config.hostname }` : null;
         redirectObjects.forEach(redirect =>
             uploadQueue.push(
                 asyncify(async () => {
@@ -308,12 +325,12 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     }
                     key = createSafeS3Key(key);
                     if (config.bucketPrefix) {
-                        key = withoutLeadingSlash(`${config.bucketPrefix}/${key}`);
+                        key = withoutLeadingSlash(`${ config.bucketPrefix }/${ key }`);
                     }
 
-                    const tag = `"${createHash('md5')
+                    const tag = `"${ createHash('md5')
                         .update(redirectLocation)
-                        .digest('hex')}"`;
+                        .digest('hex') }"`;
                     const objectUnchanged = keyToETagMap[key] === tag;
 
                     isKeyInUse[key] = true;
@@ -324,8 +341,8 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                     }
 
                     try {
-                        const upload = new S3.ManagedUpload({
-                            service: s3,
+                        const upload = new Upload({
+                            client: s3,
                             params: {
                                 Bucket: config.bucketName,
                                 Key: key,
@@ -337,12 +354,12 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                             },
                         });
 
-                        await upload.promise();
+                        await upload.done();
 
                         spinner.text = chalk`Syncing...
-{dim   Created Redirect {cyan ${key}} => {cyan ${redirectLocation}}}\n`;
+{dim   Created Redirect {cyan ${ key }} => {cyan ${ redirectLocation }}}\n`;
                     } catch (ex) {
-                        spinner.fail(chalk`Upload failure for object {cyan ${key}}`);
+                        spinner.fail(chalk`Upload failure for object {cyan ${ key }}`);
                         console.error(pe.render(ex));
                         process.exit(1);
                     }
@@ -369,7 +386,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             for (let i = 0; i < objectsToRemove.length; i += OBJECTS_TO_REMOVE_PER_REQUEST) {
                 const objectsToRemoveInThisRequest = objectsToRemove.slice(i, i + OBJECTS_TO_REMOVE_PER_REQUEST);
 
-                spinner.text = `Removing objects ${i + 1} to ${i + objectsToRemoveInThisRequest.length} of ${
+                spinner.text = `Removing objects ${ i + 1 } to ${ i + objectsToRemoveInThisRequest.length } of ${
                     objectsToRemove.length
                 }`;
 
@@ -380,8 +397,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
                             Objects: objectsToRemoveInThisRequest,
                             Quiet: true,
                         },
-                    })
-                    .promise();
+                    });
             }
         }
 
@@ -390,12 +406,12 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             const s3WebsiteDomain = getS3WebsiteDomainUrl(region ?? 'us-east-1');
             console.log(chalk`
             {bold Your website is online at:}
-            {blue.underline http://${config.bucketName}.${s3WebsiteDomain}}
+            {blue.underline http://${ config.bucketName }.${ s3WebsiteDomain }}
             `);
         } else {
             console.log(chalk`
             {bold Your website has now been published to:}
-            {blue.underline ${config.bucketName}}
+            {blue.underline ${ config.bucketName }}
             `);
         }
     } catch (ex) {
@@ -407,7 +423,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
 
 yargs
     .command(
-        ['deploy', '$0'],
+        [ 'deploy', '$0' ],
         "Deploy bucket. If it doesn't exist, it will be created. Otherwise, it will be updated.",
         args =>
             args
