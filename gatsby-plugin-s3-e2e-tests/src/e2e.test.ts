@@ -18,9 +18,9 @@ jest.setTimeout(150000);
 dotenv.config();
 
 const bucketName = generateBucketName();
-const testingEndpoint = `http://${bucketName}.s3-website-eu-west-1.amazonaws.com`;
+const testingEndpoint = `http://${ bucketName }.s3-website-eu-west-1.amazonaws.com`;
 
-console.debug(`Testing using bucket ${bucketName}.`);
+console.debug(`Testing using bucket ${ bucketName }.`);
 
 beforeAll(async () => {
     // If a previous test execution failed spectacularly, it's possible the bucket may have been left behind
@@ -34,7 +34,7 @@ beforeAll(async () => {
             // Jest continues running tests but the results are unusable!
             // https://github.com/facebook/jest/issues/2713
             process.stderr.write('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!\n');
-            process.stderr.write(`${err}\n`);
+            process.stderr.write(`${ err }\n`);
             process.exit(1);
         }
     }
@@ -88,15 +88,15 @@ describe('gatsby-plugin-s3', () => {
             Permission.DeleteObject,
         ]);
         console.log('[debug]', 'uploads', bucketName);
+
         async function createTestFile(Key: string) {
-            await s3
-                .putObject({
-                    Bucket: bucketName,
-                    Key,
-                    Body: `test content for ${Key}`,
-                })
-                .promise();
+            await s3.putObject({
+                Bucket: bucketName,
+                Key,
+                Body: `test content for ${ Key }`,
+            });
         }
+
         await createTestFile('file.retain.js');
         await createTestFile('file.remove.js');
         await createTestFile('sub-folder/file.retain.js');
@@ -112,24 +112,22 @@ describe('gatsby-plugin-s3', () => {
             Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
-        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' }).promise()).resolves.toBeTruthy();
-        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.remove.js' }).promise()).rejects.toThrow();
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' })).resolves.toBeTruthy();
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.remove.js' })).rejects.toThrow();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.retain.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.retain.js' })
         ).resolves.toBeTruthy();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.remove.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.remove.js' })
         ).rejects.toThrow();
         await expect(
-            s3
-                .headObject({
-                    Bucket: bucketName,
-                    Key: 'sub-folder/retain-folder/file.js',
-                })
-                .promise()
+            s3.headObject({
+                Bucket: bucketName,
+                Key: 'sub-folder/retain-folder/file.js',
+            })
         ).resolves.toBeTruthy();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'retain-folder/file.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'retain-folder/file.js' })
         ).resolves.toBeTruthy();
     });
 });
@@ -192,25 +190,25 @@ describe('object-based redirects', () => {
     ];
 
     headerTests.forEach(t => {
-        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+        test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             let path;
             if (t.path) {
                 path = t.path;
             } else if (t.searchPattern) {
-                console.log(`${siteDirectory}/`);
-                const matchingFiles = glob.sync(t.searchPattern, { cwd: `${siteDirectory}/public`, nodir: true });
-                path = `/${matchingFiles[0]}`;
+                console.log(`${ siteDirectory }/`);
+                const matchingFiles = glob.sync(t.searchPattern, { cwd: `${ siteDirectory }/public`, nodir: true });
+                path = `/${ matchingFiles[0] }`;
                 console.log(path);
             }
 
             if (!path) {
-                throw new Error(`Failed to find matching file for pattern ${t.searchPattern}`);
+                throw new Error(`Failed to find matching file for pattern ${ t.searchPattern }`);
             }
 
-            const response = await fetch(`${testingEndpoint}${path}`);
-            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+            const response = await fetch(`${ testingEndpoint }${ path }`);
+            expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
+            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 
@@ -254,11 +252,11 @@ describe('object-based redirects', () => {
     ];
 
     redirectTests.forEach(t => {
-        test(`can redirect ${t.name}`, async () => {
-            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
-            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
-                `${testingEndpoint}${t.expectedDestination}`
+        test(`can redirect ${ t.name }`, async () => {
+            const response = await fetch(`${ testingEndpoint }${ t.source }`, { redirect: 'manual' });
+            expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
+            expect(response.headers.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+                `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
     });
@@ -321,11 +319,11 @@ describe('rules-based redirects', () => {
     ];
 
     redirectTests.forEach(t => {
-        test(`can redirect ${t.name}`, async () => {
-            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
-            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
-                `${testingEndpoint}${t.expectedDestination}`
+        test(`can redirect ${ t.name }`, async () => {
+            const response = await fetch(`${ testingEndpoint }${ t.source }`, { redirect: 'manual' });
+            expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
+            expect(response.headers.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+                `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
     });
@@ -371,13 +369,13 @@ describe('with pathPrefix', () => {
     ];
 
     headerTests.forEach(t => {
-        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+        test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             const { path } = t;
 
-            const response = await fetch(`${testingEndpoint}${path}`);
-            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+            const response = await fetch(`${ testingEndpoint }${ path }`);
+            expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
+            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 });
