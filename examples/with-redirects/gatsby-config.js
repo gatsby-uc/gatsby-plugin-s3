@@ -17,7 +17,7 @@ module.exports = {
                 generateRedirectObjectsForPermanentRedirects: !process.env.GATSBY_S3_LEGACY_REDIRECTS,
                 ...(process.env.GATSBY_S3_ACL
                     ? {
-                          acl: process.env.ACL != 'NULL' ? process.env.ACL : null,
+                          acl: process.env.ACL !== 'NULL' ? process.env.ACL : null,
                       }
                     : {}),
                 removeNonexistentObjects: true,
