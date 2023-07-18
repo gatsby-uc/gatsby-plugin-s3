@@ -98,13 +98,13 @@ const getParams = (path: string, params: Params): Partial<PutObjectRequest> => {
 const listAllObjects = async (s3: S3, bucketName: string, bucketPrefix: string | undefined): Promise<Array<S3Object>> => {
     const list: Array<S3Object> = [];
 
-    let token: string | undefined = undefined;
+    let token = null;
     do {
         const response: ListObjectsV2CommandOutput = await s3
             .listObjectsV2({
                 Bucket: bucketName,
-                ContinuationToken: token,
                 Prefix: bucketPrefix,
+                ...(token ? { ContinuationToken: token } : {}),
             });
 
         if (response.Contents) {
@@ -131,8 +131,7 @@ export interface DeployArguments {
     userAgent?: string;
 }
 
-export const makeAgent = (): ProxyAgent | undefined => {
-    const proxy = process.env.HTTP_PROXY;
+export const makeAgent = (proxy?: string): ProxyAgent | undefined => {
     return proxy
         ? new ProxyAgent({ getProxyForUrl: () => proxy })
         : undefined;
@@ -157,15 +156,14 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
             config.bucketName = bucket;
         }
 
-        const agent = makeAgent()
         const maxRetries = config.maxRetries || DEFAULT_OPTIONS.maxRetries as number
         const s3 = new S3({
             region: config.region,
             endpoint: config.customAwsEndpointHostname,
             customUserAgent: userAgent ?? '',
             requestHandler: new NodeHttpHandler({
-                httpAgent: agent,
-                httpsAgent: agent,
+                httpAgent: makeAgent(process.env.HTTP_PROXY),
+                httpsAgent: makeAgent(process.env.HTTPS_PROXY),
                 requestTimeout: config.timeout,
                 connectionTimeout: config.connectTimeout,
             }),
