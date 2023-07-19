@@ -93,6 +93,16 @@ export const createPagesStatefully: GatsbyNode['createPagesStatefully'] = (
     }
 };
 
+
+// sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
+// the syntax that gatsby invented here does not work with routing rules.
+// routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
+const normalisePath = (path: string): string => {
+    return path.endsWith('*')
+        ? path.slice(0, -1)
+        : path;
+}
+
 export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOptions: S3PluginOptions) => {
     const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
     const { redirects, pages, program }: GatsbyState = store.getState();
@@ -105,14 +115,9 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
     let rewrites: GatsbyRedirect[] = [];
     if (pluginOptions.generateMatchPathRewrites) {
         rewrites = Array.from(pages.values())
-            .filter((page): page is Required<Page> => !!page.matchPath && page.matchPath !== page.path)
+            .filter((page): page is Required<Page> => !!page.matchPath && normalisePath(page.matchPath) !== page.path)
             .map(page => ({
-                // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
-                // the syntax that gatsby invented here does not work with routing rules.
-                // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
-                fromPath: page.matchPath.endsWith('*')
-                    ? page.matchPath.substring(0, page.matchPath.length - 1)
-                    : page.matchPath,
+                fromPath: normalisePath(page.matchPath),
                 toPath: page.path,
             }));
     }
