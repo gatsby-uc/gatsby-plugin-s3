@@ -27,7 +27,6 @@ import util from 'util';
 import { minimatch } from 'minimatch';
 import mime from 'mime';
 import inquirer from 'inquirer';
-import { config as awsConfig } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './utilities';
@@ -50,22 +49,22 @@ const promisifiedParallelLimit: <T, E = Error>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Promise<T[]> = util.promisify(parallelLimit) as any;
 
-const provideValue = async (provider: string | Provider<string> | undefined): Promise<string | undefined> => {
-    if (!provider) {
+const guessRegion = async (region: string | Provider<string> | undefined): Promise<string | undefined> => {
+    if (!region) {
         return undefined
     }
-    if (typeof provider === 'string') {
-        return provider;
+    if (typeof region === 'string') {
+        return region;
     }
-    return provider();
+    return region();
 }
-
-const guessRegion = async (s3: S3, constraint?: string): Promise<string | undefined> => provideValue(constraint ?? s3.config.region ?? awsConfig.region);
 
 const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
     try {
         const responseData = await s3.getBucketLocation({ Bucket: config.bucketName });
-        const detectedRegion = await guessRegion(s3, responseData?.LocationConstraint);
+        const detectedRegion = await guessRegion(
+            responseData?.LocationConstraint || config.region || s3.config.region
+        );
         return {
             exists: true,
             region: detectedRegion,
@@ -74,7 +73,7 @@ const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists:
         if (ex.code === 'NoSuchBucket') {
             return {
                 exists: false,
-                region: await guessRegion(s3),
+                region: await guessRegion(config.region || s3.config.region),
             };
         }
         throw ex;
@@ -141,7 +140,7 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
 
-    const uploadQueue: Array<AsyncFunction<void, Error>> = [];
+    const uploadQueue: Array<AsyncFunction<void>> = [];
 
     try {
         const config: S3PluginOptions = await readJson(CACHE_FILES.config);

@@ -38,7 +38,13 @@
     "devDependencies": {
         "@snyk/protect": "^1.1190.0",
         "@types/async": "^3.2.20",
-        "@types/node": "^20.4.2"
+        "@types/fs-extra": "^11.0.1",
+        "@types/inquirer": "^9.0.3",
+        "@types/is-ci": "^3.0.0",
+        "@types/klaw": "^3.0.3",
+        "@types/mime": "^3.0.1",
+        "@types/node": "^20.4.2",
+        "@types/stream-to-promise": "^2.2.1"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.370.0",

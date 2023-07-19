@@ -2,7 +2,7 @@ import { CACHING_PARAMS, DEFAULT_OPTIONS, GatsbyRedirect, GatsbyState, Params, S
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
-import { Condition, Redirect, RoutingRule, RoutingRules, Types } from 'aws-sdk/clients/s3';
+import { Condition, PutObjectCommandInput, Redirect, RoutingRule } from '@aws-sdk/client-s3';
 import { withoutLeadingSlash, withoutTrailingSlash } from './utilities';
 import { GatsbyNode, Page } from 'gatsby';
 
@@ -39,7 +39,7 @@ const buildRedirect = (pluginOptions: S3PluginOptions, route: GatsbyRedirect): R
 
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
-const getRules = (pluginOptions: S3PluginOptions, routes: GatsbyRedirect[]): RoutingRules =>
+const getRules = (pluginOptions: S3PluginOptions, routes: GatsbyRedirect[]): Array<RoutingRule> =>
     routes.map(route => ({
         Condition: {
             ...buildCondition(route.fromPath),
@@ -120,13 +120,13 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
     if (pluginOptions.mergeCachingParams) {
         const prefixedCachingParams = Object.entries(CACHING_PARAMS)
             .map(
-                ([key, val]) =>
-                    [pluginOptions.bucketPrefix ? `${pluginOptions.bucketPrefix}/${key}` : key, val] as [
+                ([ key, val ]) =>
+                    [ pluginOptions.bucketPrefix ? `${ pluginOptions.bucketPrefix }/${ key }` : key, val ] as [
                         string,
-                        Partial<Types.PutObjectRequest>
+                        Partial<PutObjectCommandInput>
                     ]
             )
-            .reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {});
+            .reduce((obj, [ key, val ]) => ({ ...obj, [key]: val }), {});
 
         params = {
             ...params,
@@ -151,13 +151,13 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
         .filter(redirect => redirect.isPermanent);
 
     if (pluginOptions.generateRoutingRules) {
-        routingRules = [...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites)];
+        routingRules = [ ...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites) ];
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
             routingRules.push(...getRules(pluginOptions, permanentRedirects));
         }
         if (routingRules.length > 50) {
             throw new Error(
-                `${routingRules.length} routing rules provided, the number of routing rules 
+                `${ routingRules.length } routing rules provided, the number of routing rules 
 in a website configuration is limited to 50.
 Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration option.`
             );
