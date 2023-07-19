@@ -10,7 +10,7 @@ exports.createPages = ({ actions }) => {
         toPath: '/blog/1',
         isPermanent: true
     });
-    
+
     actions.createRedirect({
         fromPath: '/hello-there',
         toPath: '/client-only',
@@ -29,3 +29,12 @@ exports.createPages = ({ actions }) => {
         isPermanent: true
     });
 };
+
+// Required for client only paths to work
+exports.onCreatePage = async ({ page, actions }) => {
+    const {createPage} = actions
+    if (page.path.match(/^\/client-only/)) {
+        page.matchPath = "/client-only/*"
+        createPage(page)
+    }
+}
