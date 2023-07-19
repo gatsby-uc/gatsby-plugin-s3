@@ -24,6 +24,7 @@
     "dependencies": {
         "@aws-sdk/client-s3": "^3.370.0",
         "@aws-sdk/node-http-handler": "^3.370.0",
+        "axios": "^1.4.0",
         "dotenv": "^16.3.1",
         "gatsby-plugin-s3-example-with-redirects": "../examples/with-redirects",
         "glob": "^10.3.3",
@@ -32,9 +33,11 @@
         "jest-junit": "^16.0.0",
         "node-fetch": "^3.3.1",
         "proxy-agent": "^6.3.0",
-        "resolve-package-path": "^4.0.3"
+        "resolve-package-path": "^4.0.3",
+        "ts-jest": "^29.1.1"
     },
     "jest": {
+        "preset": "ts-jest",
         "roots": [
             "<rootDir>"
         ],
@@ -54,7 +57,8 @@
             "**/?(*.)+(spec|test).ts"
         ],
         "transform": {
-            "^.+\\.tsx?$": "babel-jest"
+            "^.+\\.tsx?$": "babel-jest",
+            "^.+\\.ts?$": "ts-jest"
         },
         "setupFiles": [
             "@babel/polyfill"

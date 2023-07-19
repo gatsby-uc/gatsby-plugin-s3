@@ -17,11 +17,16 @@ variable "bucket_deletion_period" {
 
 
 terraform {
-    required_version = "~> 0.12"
+    required_version = "~> 1.5.2"
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~> 5.0"
+        }
+    }
 }
 
 provider "aws" {
-    version = "~> 2.59"
     region = local.region
 }
 
@@ -60,12 +65,12 @@ data "archive_file" "lambda_function" {
 
     source {
         filename = "cleanupLambda.js"
-        content = file("${path.module}/../test/cleanupLambda.js")
+        content = file("${path.module}/../gatsby-plugin-s3-e2e-tests/dist/cleanupLambda.js")
     }
 
     source {
         filename = "helpers.js"
-        content = file("${path.module}/../test/helpers.js")
+        content = file("${path.module}/../gatsby-plugin-s3-e2e-tests/dist/helpers.js")
     }
 }
 
@@ -76,7 +81,7 @@ resource "aws_lambda_function" "function" {
     handler = "cleanupLambda.default"
 
     source_code_hash = data.archive_file.lambda_function.output_base64sha256
-    runtime = "nodejs12.x"
+    runtime = "nodejs18.x"
 }
 
 resource "aws_cloudwatch_event_rule" "event" {

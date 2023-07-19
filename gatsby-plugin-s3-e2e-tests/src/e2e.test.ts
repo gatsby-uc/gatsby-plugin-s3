@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import axios from 'axios';
 import * as dotenv from 'dotenv';
 import glob from 'glob';
 import {
@@ -205,10 +205,10 @@ describe('object-based redirects', () => {
                 throw new Error(`Failed to find matching file for pattern ${ t.searchPattern }`);
             }
 
-            const response = await fetch(`${ testingEndpoint }${ path }`);
+            const response = await axios.get(`${ testingEndpoint }${ path }`);
             expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            expect(response.headers?.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers?.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 
@@ -253,9 +253,9 @@ describe('object-based redirects', () => {
 
     redirectTests.forEach(t => {
         test(`can redirect ${ t.name }`, async () => {
-            const response = await fetch(`${ testingEndpoint }${ t.source }`, { redirect: 'manual' });
+            const response = await axios.get(`${ testingEndpoint }${ t.source }`);
             expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+            expect(response.headers?.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
                 `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
@@ -320,9 +320,9 @@ describe('rules-based redirects', () => {
 
     redirectTests.forEach(t => {
         test(`can redirect ${ t.name }`, async () => {
-            const response = await fetch(`${ testingEndpoint }${ t.source }`, { redirect: 'manual' });
+            const response = await axios.get(`${ testingEndpoint }${ t.source }`);
             expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+            expect(response.headers?.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
                 `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
@@ -372,10 +372,10 @@ describe('with pathPrefix', () => {
         test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             const { path } = t;
 
-            const response = await fetch(`${ testingEndpoint }${ path }`);
+            const response = await axios.get(`${ testingEndpoint }${ path }`);
             expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            expect(response.headers?.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers?.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 });
