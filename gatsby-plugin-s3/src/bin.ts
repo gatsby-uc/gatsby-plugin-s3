@@ -7,6 +7,7 @@ import AWS_S3, {
     CreateBucketRequest,
     DeletePublicAccessBlockRequest,
     ListObjectsV2CommandOutput,
+    NoSuchBucket,
     PutBucketWebsiteRequest,
     PutObjectRequest,
     S3
@@ -59,6 +60,10 @@ const guessRegion = async (region: string | Provider<string> | undefined): Promi
     return region();
 }
 
+const isNoSuchBucket = (error: Error): error is NoSuchBucket => {
+    return "name" in error && error.name === 'NoSuchBucket';
+}
+
 const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
     try {
         const responseData = await s3.getBucketLocation({ Bucket: config.bucketName });
@@ -70,7 +75,7 @@ const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists:
             region: detectedRegion,
         };
     } catch (ex) {
-        if (ex.code === 'NoSuchBucket') {
+        if (isNoSuchBucket(ex)) {
             return {
                 exists: false,
                 region: await guessRegion(config.region || s3.config.region),
