@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 module.exports = {
     siteMetadata: {
         title: 'Gatsby Default Starter',
@@ -6,10 +8,10 @@ module.exports = {
     },
     plugins: [
         {
-            resolve: `gatsby-plugin-s3`,
+            resolve: 'gatsby-plugin-s3',
             options: {
-                bucketName: 'gatsby-plugin-s3-dev-serverless',
-                region: 'eu-west-1'
+                bucketName: process.env.GATSBY_S3_TARGET_BUCKET || 'gatsby-plugin-s3-dev-serverless',
+                region: process.env.AWS_REGION || 'eu-west-1',
             },
         }
     ]
