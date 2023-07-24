@@ -120,8 +120,7 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
-    // TODO: set this to true by default in the next major version
-    generateRedirectObjectsForPermanentRedirects: false,
+    generateRedirectObjectsForPermanentRedirects: true,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,

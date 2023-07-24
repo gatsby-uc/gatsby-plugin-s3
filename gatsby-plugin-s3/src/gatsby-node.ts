@@ -63,37 +63,6 @@ export const onPreBootstrap: GatsbyNode['createPagesStatefully'] = ({ reporter }
     params = {};
 };
 
-export const createPagesStatefully: GatsbyNode['createPagesStatefully'] = (
-    { store, actions: { createPage } },
-    userPluginOptions?: S3PluginOptions
-) => {
-    const pluginOptions = { ...DEFAULT_OPTIONS, ...userPluginOptions };
-    const { redirects, pages }: GatsbyState = store.getState();
-
-    if (pluginOptions.generateIndexPageForRedirect) {
-        const indexRedirect = redirects.find(redirect => redirect.fromPath === '/');
-        const indexPage = Array.from(pages.values()).find(page => page.path === '/');
-        if (indexRedirect) {
-            if (!indexPage) {
-                // no index page yet, create one so we can add a redirect to it's metadata when uploading
-                createPage({
-                    path: '/',
-                    component: path.join(__dirname, './fake-index.js'),
-                    context: {},
-                });
-            }
-
-            params = {
-                ...params,
-                'index.html': {
-                    WebsiteRedirectLocation: indexRedirect.toPath,
-                },
-            };
-        }
-    }
-};
-
-
 // sort of (w)hack. https://i.giphy.com/media/iN5qfn8S2qVgI/giphy.webp
 // the syntax that gatsby invented here does not work with routing rules.
 // routing rules syntax is `/app/` not `/app/*` (it's basically prefix by default)
@@ -155,11 +124,15 @@ export const onPostBuild: GatsbyNode['onPostBuild'] = ({ store }, userPluginOpti
         .filter(redirect => redirect.fromPath !== '/')
         .filter(redirect => redirect.isPermanent);
 
+    // Generate routing rules for all non-home pages
     if (pluginOptions.generateRoutingRules) {
         routingRules = [ ...getRules(pluginOptions, temporaryRedirects), ...getRules(pluginOptions, rewrites) ];
+
+        // Don't create routing rules for permanants if using redirect objects
         if (!pluginOptions.generateRedirectObjectsForPermanentRedirects) {
             routingRules.push(...getRules(pluginOptions, permanentRedirects));
         }
+
         if (routingRules.length > 50) {
             throw new Error(
                 `${ routingRules.length } routing rules provided, the number of routing rules 
@@ -174,6 +147,26 @@ Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration opt
         }));
     }
 
+    // Calculate permanant redirects
+    let redirectObjects: GatsbyRedirect[] = [];
+    if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+        redirectObjects = redirects
+            .filter(redirect => redirect.fromPath !== '/')
+            .filter(redirect => redirect.isPermanent);
+    }
+
+    // Home page is a special redirect
+    if (pluginOptions.generateIndexPageForRedirect) {
+        const indexRedirect = redirects
+            .find(redirect => redirect.fromPath === '/');
+        if (indexRedirect) {
+            redirectObjects.push({
+                fromPath: '/index.html',
+                toPath: indexRedirect.toPath,
+            })
+        }
+    }
+
     fs.writeFileSync(path.join(program.directory, './.cache/s3.routingRules.json'), JSON.stringify(routingRules));
 
     fs.writeFileSync(
@@ -181,10 +174,10 @@ Try setting the 'generateRedirectObjectsForPermanentRedirects' configuration opt
         JSON.stringify(slsRoutingRules)
     );
 
-    if (pluginOptions.generateRedirectObjectsForPermanentRedirects) {
+    if (redirectObjects.length > 0) {
         fs.writeFileSync(
             path.join(program.directory, './.cache/s3.redirectObjects.json'),
-            JSON.stringify(permanentRedirects)
+            JSON.stringify(redirectObjects)
         );
     }
 
