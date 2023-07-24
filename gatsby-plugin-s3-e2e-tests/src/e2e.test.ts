@@ -1,6 +1,5 @@
-import axios from 'axios';
 import * as dotenv from 'dotenv';
-import glob from 'glob';
+import { globSync } from 'glob';
 import {
     buildSite,
     cleanupExistingBuckets,
@@ -8,9 +7,10 @@ import {
     EnvironmentBoolean,
     forceDeleteBucket,
     generateBucketName,
+    getPackageDirectory,
+    getUrl,
     Permission,
     s3,
-    getPackageDirectory,
 } from './helpers';
 import 'jest-expect-message';
 
@@ -18,7 +18,7 @@ jest.setTimeout(150000);
 dotenv.config();
 
 const bucketName = generateBucketName();
-const testingEndpoint = `http://${ bucketName }.s3-website-eu-west-1.amazonaws.com`;
+const testingEndpoint = `http://${ bucketName }.s3-website-us-east-1.amazonaws.com`;
 
 console.debug(`Testing using bucket ${ bucketName }.`);
 
@@ -42,7 +42,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
     try {
-        await forceDeleteBucket(bucketName);
+        if (!process.env.SKIP_FORCE_DELETE) {
+            await forceDeleteBucket(bucketName);
+        }
     } catch (err) {
         console.error('Failed to delete bucket after test completion:', bucketName);
     }
@@ -152,13 +154,13 @@ describe('object-based redirects', () => {
     const headerTests = [
         {
             name: 'html files',
-            path: '/',
+            path: '/page-2/',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'text/html',
         },
         {
             name: 'page-data files',
-            path: '/page-data/index/page-data.json',
+            path: '/page-data/page-2/page-data.json',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'application/json',
         },
@@ -196,7 +198,7 @@ describe('object-based redirects', () => {
                 path = t.path;
             } else if (t.searchPattern) {
                 console.log(`${ siteDirectory }/`);
-                const matchingFiles = glob.sync(t.searchPattern, { cwd: `${ siteDirectory }/public`, nodir: true });
+                const matchingFiles = globSync(t.searchPattern, { cwd: `${ siteDirectory }/public`, nodir: true });
                 path = `/${ matchingFiles[0] }`;
                 console.log(path);
             }
@@ -205,10 +207,11 @@ describe('object-based redirects', () => {
                 throw new Error(`Failed to find matching file for pattern ${ t.searchPattern }`);
             }
 
-            const response = await axios.get(`${ testingEndpoint }${ path }`);
-            expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers['content-type'], `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            const url = `${ testingEndpoint }${ path }`;
+            const response = await getUrl(url);
+            expect(response.status, `Error accessing ${ url }`).toBe(200);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ url }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ url }`).toBe(t.contentType);
         });
     });
 
@@ -216,7 +219,7 @@ describe('object-based redirects', () => {
         {
             name: 'from root',
             source: '/',
-            expectedDestination: '/page-2',
+            expectedDestination: '/page-2/',
             expectedResponseCode: 301,
         },
         {
@@ -228,7 +231,7 @@ describe('object-based redirects', () => {
         {
             name: 'to a child directory',
             source: '/blog',
-            expectedDestination: '/blog/1',
+            expectedDestination: '/blog/1/',
             expectedResponseCode: 301,
         },
         {
@@ -253,10 +256,11 @@ describe('object-based redirects', () => {
 
     redirectTests.forEach(t => {
         test(`can redirect ${ t.name }`, async () => {
-            const response = await axios.get(`${ testingEndpoint }${ t.source }`);
-            expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers.location, `Incorrect Content-Type for ${ t.source }`).toBe(
-                `${ testingEndpoint }${ t.expectedDestination }`
+            const url = `${ testingEndpoint }${ t.source }`;
+            const response = await getUrl(url);
+            expect(response.status, `Incorrect response status for ${ url }`).toBe(t.expectedResponseCode);
+            expect(response.headers.location, `Incorrect Content-Type for ${ url }`).toBe(
+                t.expectedDestination
             );
         });
     });
@@ -320,9 +324,10 @@ describe('rules-based redirects', () => {
 
     redirectTests.forEach(t => {
         test(`can redirect ${ t.name }`, async () => {
-            const response = await axios.get(`${ testingEndpoint }${ t.source }`);
-            expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers.location, `Incorrect Content-Type for ${ t.source }`).toBe(
+            const url = `${ testingEndpoint }${ t.source }`;
+            const response = await getUrl(url);
+            expect(response.status, `Incorrect response status for ${ url }`).toBe(t.expectedResponseCode);
+            expect(response.headers.location, `Incorrect Content-Type for ${ url }`).toBe(
                 `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
@@ -372,10 +377,11 @@ describe('with pathPrefix', () => {
         test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             const { path } = t;
 
-            const response = await axios.get(`${ testingEndpoint }${ path }`);
-            expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers['content-type'], `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            const url = `${ testingEndpoint }${ path }`;
+            const response = await getUrl(url);
+            expect(response.status, `Error accessing ${ url }`).toBe(200);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ url }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ url }`).toBe(t.contentType);
         });
     });
 });

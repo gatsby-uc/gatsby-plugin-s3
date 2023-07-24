@@ -13,7 +13,7 @@ module.exports = {
             options: {
                 bucketName: process.env.GATSBY_S3_TARGET_BUCKET || 'test',
                 bucketPrefix: process.env.GATSBY_S3_BUCKET_PREFIX ? process.env.GATSBY_S3_BUCKET_PREFIX : null,
-                region: process.env.AWS_REGION || 'eu-west-1',
+                region: process.env.AWS_REGION || 'us-east-1',
                 generateRedirectObjectsForPermanentRedirects: !process.env.GATSBY_S3_LEGACY_REDIRECTS,
                 ...(process.env.GATSBY_S3_ACL
                     ? {

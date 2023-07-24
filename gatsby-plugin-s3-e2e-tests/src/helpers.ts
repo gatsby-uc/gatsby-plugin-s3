@@ -6,17 +6,22 @@ import { Readable } from 'stream';
 import { S3, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
 import resolvePackagePath from 'resolve-package-path';
 import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
+import axios from "axios";
 
 // IMPORTANT: Must match what's in test-infrastructure/template.tf
 const bucketPrefix = 'gatsby-plugin-s3-tests-';
 const bucketRandomCharacters = 12; // Must be an even number
 const considerBucketsLeftoverIfOlderThan = 1000 * 60 * 60; // 1 hour
-const region = 'eu-west-1';
+const region = 'us-east-1';
 
 export enum EnvironmentBoolean {
     False = '',
     True = 'true',
 }
+
+export const getUrl = async (url: string) => axios.get(url, {
+    maxRedirects: 0, validateStatus: (status) => status >= 200 && status < 500
+})
 
 export const makeAgent = (proxy?: string): ProxyAgent | undefined => proxy
     ? new ProxyAgent({ getProxyForUrl: () => proxy })

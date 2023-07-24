@@ -40,14 +40,22 @@ const buildRedirect = (pluginOptions: S3PluginOptions, route: GatsbyRedirect): R
 // converts gatsby redirects + rewrites to S3 routing rules
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-websiteconfiguration-routingrules.html
 const getRules = (pluginOptions: S3PluginOptions, routes: GatsbyRedirect[]): Array<RoutingRule> =>
-    routes.map(route => ({
-        Condition: {
-            ...buildCondition(route.fromPath),
-        },
-        Redirect: {
-            ...buildRedirect(pluginOptions, route),
-        },
-    }));
+    routes
+        .map(route => ({
+            Condition: {
+                ...buildCondition(route.fromPath),
+            },
+            Redirect: {
+                ...buildRedirect(pluginOptions, route),
+            },
+        }))
+        // Disallow infinite redirects (child page to parent)
+        // See https://github.com/gatsby-uc/gatsby-plugin-s3/issues/207
+        .filter(rule => (
+            !rule.Redirect.ReplaceKeyWith?.startsWith(
+                rule.Condition.KeyPrefixEquals || ''
+            )
+        ));
 
 let params: Params = {};
 

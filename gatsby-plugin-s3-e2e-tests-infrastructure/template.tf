@@ -5,7 +5,7 @@ locals {
     # Must match what's used in test-policy.json
     bucketPrefix = "gatsby-plugin-s3-tests-"
 
-    region = "eu-west-1"
+    region = "us-east-1"
 }
 
 variable "bucket_deletion_period" {

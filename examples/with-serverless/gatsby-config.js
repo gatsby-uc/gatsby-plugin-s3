@@ -11,7 +11,7 @@ module.exports = {
             resolve: 'gatsby-plugin-s3',
             options: {
                 bucketName: process.env.GATSBY_S3_TARGET_BUCKET || 'gatsby-plugin-s3-dev-serverless',
-                region: process.env.AWS_REGION || 'eu-west-1',
+                region: process.env.AWS_REGION || 'us-east-1',
             },
         }
     ]
