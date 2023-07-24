@@ -6,6 +6,7 @@
             "Effect": "Allow",
             "Action": [
                 "s3:CreateBucket",
+                "s3:PutBucketPolicy",
                 "s3:DeleteBucket"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
@@ -63,7 +64,8 @@
             "Sid": "CreateBucket",
             "Effect": "Allow",
             "Action": [
-                "s3:CreateBucket"
+                "s3:CreateBucket",
+                "s3:PutBucketPolicy"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
             "Condition": {
