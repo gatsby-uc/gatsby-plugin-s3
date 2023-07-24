@@ -218,20 +218,48 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         if (!exists) {
             const createParams: CreateBucketRequest = {
                 Bucket: config.bucketName,
-                ACL: config.acl === null ? undefined : config.acl ?? 'public-read',
+                ObjectOwnership: "BucketOwnerPreferred",
             };
-            if (config.region) {
+
+            // If non-default region, specify it here (us-east-1 is default)
+            if (config.region && config.region !== 'us-east-1') {
                 createParams.CreateBucketConfiguration = {
                     LocationConstraint: config.region,
                 };
             }
             await s3.createBucket(createParams);
+
+            // Setup static hosting
             if (config.enableS3StaticWebsiteHosting) {
                 const publicBlockConfig: DeletePublicAccessBlockRequest = {
                     Bucket: config.bucketName,
                 };
                 await s3.deletePublicAccessBlock(publicBlockConfig);
             }
+
+            // Set public policy
+            if (config.acl === undefined || config.acl === 'public-read') {
+                await s3.putBucketPolicy({
+                    Bucket: config.bucketName,
+                    Policy: JSON.stringify({
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Sid": "PublicReadGetObject",
+                                "Effect": "Allow",
+                                "Principal": "*",
+                                "Action": [
+                                    "s3:GetObject"
+                                ],
+                                "Resource": [
+                                    `arn:aws:s3:::${ config.bucketName }/*`
+                                ]
+                            }
+                        ]
+                    })
+                })
+            }
+
         }
 
         if (config.enableS3StaticWebsiteHosting) {

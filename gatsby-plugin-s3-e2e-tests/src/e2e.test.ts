@@ -207,8 +207,8 @@ describe('object-based redirects', () => {
 
             const response = await axios.get(`${ testingEndpoint }${ path }`);
             expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers?.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers?.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 
@@ -255,7 +255,7 @@ describe('object-based redirects', () => {
         test(`can redirect ${ t.name }`, async () => {
             const response = await axios.get(`${ testingEndpoint }${ t.source }`);
             expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers?.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+            expect(response.headers.location, `Incorrect Content-Type for ${ t.source }`).toBe(
                 `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
@@ -322,7 +322,7 @@ describe('rules-based redirects', () => {
         test(`can redirect ${ t.name }`, async () => {
             const response = await axios.get(`${ testingEndpoint }${ t.source }`);
             expect(response.status, `Incorrect response status for ${ t.source }`).toBe(t.expectedResponseCode);
-            expect(response.headers?.get('location'), `Incorrect Content-Type for ${ t.source }`).toBe(
+            expect(response.headers.location, `Incorrect Content-Type for ${ t.source }`).toBe(
                 `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
@@ -374,8 +374,8 @@ describe('with pathPrefix', () => {
 
             const response = await axios.get(`${ testingEndpoint }${ path }`);
             expect(response.status, `Error accessing ${ testingEndpoint }${ path }`).toBe(200);
-            expect(response.headers?.get('cache-control'), `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
-            expect(response.headers?.get('content-type'), `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ path }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ path }`).toBe(t.contentType);
         });
     });
 });
