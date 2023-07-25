@@ -7,7 +7,10 @@
             "Action": [
                 "s3:CreateBucket",
                 "s3:PutBucketPolicy",
-                "s3:DeleteBucket"
+                "s3:DeleteBucket",
+                "s3:PutBucketAcl",
+                "s3:PutBucketPublicAccessBlock",
+                "s3:PutBucketWebsite"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
             "Condition": {
@@ -21,7 +24,9 @@
             "Effect": "Allow",
             "Action": [
                 "s3:GetObject",
-                "s3:DeleteObject"
+                "s3:DeleteObject",
+                "s3:PutObject",
+                "s3:PutObjectAcl"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
             "Condition": {
@@ -71,6 +76,19 @@
             "Condition": {
                 "StringLike": {
                     "aws:UserAgent": "*TestPerms*CreateBucket*"
+                }
+            }
+        },
+        {
+            "Sid": "PutBucketPublicAccessBlock",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutBucketPublicAccessBlock"
+            ],
+            "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
+            "Condition": {
+                "StringLike": {
+                    "aws:UserAgent": "*TestPerms*PutBucketPublicAccessBlock*"
                 }
             }
         },
