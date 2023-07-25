@@ -6,11 +6,8 @@
             "Effect": "Allow",
             "Action": [
                 "s3:CreateBucket",
-                "s3:PutBucketPolicy",
-                "s3:DeleteBucket",
-                "s3:PutBucketAcl",
-                "s3:PutBucketPublicAccessBlock",
-                "s3:PutBucketWebsite"
+                "s3:PutBucket*",
+                "s3:DeleteBucket"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
             "Condition": {
@@ -26,7 +23,7 @@
                 "s3:GetObject",
                 "s3:DeleteObject",
                 "s3:PutObject",
-                "s3:PutObjectAcl"
+                "s3:PutObject*"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*/*",
             "Condition": {
@@ -70,7 +67,7 @@
             "Effect": "Allow",
             "Action": [
                 "s3:CreateBucket",
-                "s3:PutBucketPolicy"
+                "s3:PutBucket*"
             ],
             "Resource": "arn:aws:s3:::gatsby-plugin-s3-tests-*",
             "Condition": {
