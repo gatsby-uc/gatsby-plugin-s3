@@ -25,7 +25,7 @@ exports.createPages = ({ actions }) => {
 
     actions.createRedirect({
         fromPath: '/trailing-slash/',
-        toPath: '/trailing-slash/1',
+        toPath: '/trailing-slash/1/',
         isPermanent: true
     });
 };

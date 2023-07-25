@@ -134,12 +134,11 @@ describe('gatsby-plugin-s3', () => {
     });
 });
 
-describe('object-based redirects', () => {
+describe('website redirects', () => {
     const siteDirectory = getPackageDirectory('gatsby-plugin-s3-example-with-redirects');
     beforeAll(async () => {
         await buildSite('gatsby-plugin-s3-example-with-redirects', {
             GATSBY_S3_TARGET_BUCKET: bucketName,
-            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.False,
         });
         await deploySite('gatsby-plugin-s3-example-with-redirects', [
             Permission.PutObject,
@@ -224,8 +223,8 @@ describe('object-based redirects', () => {
         },
         {
             name: 'temporarily',
-            source: '/hello-there',
-            expectedDestination: '/client-only',
+            source: '/hello-there/',
+            expectedDestination: `${ testingEndpoint }/client-only`,
             expectedResponseCode: 302,
         },
         {
@@ -235,21 +234,15 @@ describe('object-based redirects', () => {
             expectedResponseCode: 301,
         },
         {
-            name: 'client-only routes',
-            source: '/client-only/test',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
-        },
-        {
             name: 'from a path containing special characters',
             source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
-            expectedDestination: '/special-characters',
+            expectedDestination: '/special-characters/',
             expectedResponseCode: 301,
         },
         {
             name: 'from a path with a trailing slash',
             source: '/trailing-slash/',
-            expectedDestination: '/trailing-slash/1',
+            expectedDestination: '/trailing-slash/1/',
             expectedResponseCode: 301,
         },
     ];
@@ -261,74 +254,6 @@ describe('object-based redirects', () => {
             expect(response.status, `Incorrect response status for ${ url }`).toBe(t.expectedResponseCode);
             expect(response.headers.location, `Incorrect Content-Type for ${ url }`).toBe(
                 t.expectedDestination
-            );
-        });
-    });
-});
-
-describe('rules-based redirects', () => {
-    beforeAll(async () => {
-        await buildSite('gatsby-plugin-s3-example-with-redirects', {
-            GATSBY_S3_TARGET_BUCKET: bucketName,
-            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.True,
-        });
-        await deploySite('gatsby-plugin-s3-example-with-redirects', [
-            Permission.CreateBucket,
-            Permission.PutObject,
-            Permission.PutObjectAcl,
-            Permission.PutBucketAcl,
-            Permission.PutBucketWebsite,
-            Permission.PutBucketPublicAccessBlock,
-            Permission.DeleteObject,
-        ]);
-    });
-
-    const redirectTests = [
-        {
-            name: 'from root',
-            source: '/',
-            expectedDestination: '/page-2',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'temporarily',
-            source: '/hello-there',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
-        },
-        {
-            name: 'to a child directory',
-            source: '/blog',
-            expectedDestination: '/blog/1',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'client-only routes',
-            source: '/client-only/test',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
-        },
-        {
-            name: 'from a path containing special characters',
-            source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
-            expectedDestination: '/special-characters',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'from a path with a trailing slash',
-            source: '/trailing-slash/',
-            expectedDestination: '/trailing-slash/1',
-            expectedResponseCode: 301,
-        },
-    ];
-
-    redirectTests.forEach(t => {
-        test(`can redirect ${ t.name }`, async () => {
-            const url = `${ testingEndpoint }${ t.source }`;
-            const response = await getUrl(url);
-            expect(response.status, `Incorrect response status for ${ url }`).toBe(t.expectedResponseCode);
-            expect(response.headers.location, `Incorrect Content-Type for ${ url }`).toBe(
-                `${ testingEndpoint }${ t.expectedDestination }`
             );
         });
     });
@@ -355,13 +280,13 @@ describe('with pathPrefix', () => {
     const headerTests = [
         {
             name: 'html files',
-            path: '/prefixed/page-2',
+            path: '/prefixed/page-2/',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'text/html',
         },
         {
             name: 'page-data files',
-            path: '/prefixed/page-data/index/page-data.json',
+            path: '/prefixed/page-data/page-2/page-data.json',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'application/json',
         },
