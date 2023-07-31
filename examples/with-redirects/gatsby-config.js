@@ -13,20 +13,15 @@ module.exports = {
             options: {
                 bucketName: process.env.GATSBY_S3_TARGET_BUCKET || 'test',
                 bucketPrefix: process.env.GATSBY_S3_BUCKET_PREFIX ? process.env.GATSBY_S3_BUCKET_PREFIX : null,
-                region: 'eu-west-1',
-                generateRedirectObjectsForPermanentRedirects: !process.env.GATSBY_S3_LEGACY_REDIRECTS,
+                region: process.env.AWS_REGION || 'us-east-1',
                 ...(process.env.GATSBY_S3_ACL
                     ? {
-                          acl: process.env.ACL != 'NULL' ? process.env.ACL : null,
-                      }
+                        acl: process.env.ACL !== 'NULL' ? process.env.ACL : null,
+                    }
                     : {}),
                 removeNonexistentObjects: true,
                 retainObjectsPatterns: ['**/*.retain.js', '**/retain-folder/*'],
             },
-        },
-        {
-            resolve: `gatsby-plugin-create-client-paths`,
-            options: { prefixes: [`/client-only/*`] },
         },
         'gatsby-plugin-offline',
     ],

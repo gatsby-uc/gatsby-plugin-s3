@@ -1,5 +1,5 @@
-import { BucketCannedACL, Types } from 'aws-sdk/clients/s3';
 import path from 'path';
+import { BucketCannedACL, PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { Actions, Page, PluginOptions } from 'gatsby';
 
 export const CACHE_FILES = {
@@ -19,7 +19,7 @@ export interface GatsbyState {
 }
 
 export type Params = {
-    [k in string]: Partial<Types.PutObjectRequest>;
+    [k in string]: Partial<PutObjectCommandInput>;
 };
 
 export interface S3PluginOptions extends PluginOptions {
@@ -120,14 +120,14 @@ export const DEFAULT_OPTIONS: S3PluginOptions = {
     params: {},
     mergeCachingParams: true,
     generateRoutingRules: true,
-    // TODO: set this to true by default in the next major version
-    generateRedirectObjectsForPermanentRedirects: false,
+    generateRedirectObjectsForPermanentRedirects: true,
     generateIndexPageForRedirect: true,
     generateMatchPathRewrites: true,
     removeNonexistentObjects: true,
     retainObjectsPatterns: [],
     enableS3StaticWebsiteHosting: true,
     parallelLimit: 20,
+    maxRetries: 3,
 
     // the typing requires this for some reason...
     plugins: [],

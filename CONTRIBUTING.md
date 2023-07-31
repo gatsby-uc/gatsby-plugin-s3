@@ -1,6 +1,6 @@
 ## Monorepo tooling
 
-gatsby-plugin-s3 uses a Lerna-based monorepo. After cloning the repository, please use `npx lerna bootstrap` to install
+gatsby-plugin-s3 uses a Lerna-based monorepo. After cloning the repository, please use `npm install` to install
 dependencies and symlink the different projects together.
 
 You can use `npx lerna run build` to automatically build all of the projects in the correct order.

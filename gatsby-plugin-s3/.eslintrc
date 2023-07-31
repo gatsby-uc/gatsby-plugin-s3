@@ -3,6 +3,7 @@
     "rules": {
         "no-await-in-loop": "off",
         "no-console": "off",
-        "import/named": "off"
+        "import/named": "off",
+        "@typescript-eslint/prefer-nullish-coalescing": "off"
     }
 }

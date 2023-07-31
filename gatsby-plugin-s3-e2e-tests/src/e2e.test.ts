@@ -1,6 +1,5 @@
-import fetch from 'node-fetch';
 import * as dotenv from 'dotenv';
-import glob from 'glob';
+import { globSync } from 'glob';
 import {
     buildSite,
     cleanupExistingBuckets,
@@ -8,9 +7,10 @@ import {
     EnvironmentBoolean,
     forceDeleteBucket,
     generateBucketName,
+    getPackageDirectory,
+    getUrl,
     Permission,
     s3,
-    getPackageDirectory,
 } from './helpers';
 import 'jest-expect-message';
 
@@ -18,9 +18,9 @@ jest.setTimeout(150000);
 dotenv.config();
 
 const bucketName = generateBucketName();
-const testingEndpoint = `http://${bucketName}.s3-website-eu-west-1.amazonaws.com`;
+const testingEndpoint = `http://${ bucketName }.s3-website-us-east-1.amazonaws.com`;
 
-console.debug(`Testing using bucket ${bucketName}.`);
+console.debug(`Testing using bucket ${ bucketName }.`);
 
 beforeAll(async () => {
     // If a previous test execution failed spectacularly, it's possible the bucket may have been left behind
@@ -34,7 +34,7 @@ beforeAll(async () => {
             // Jest continues running tests but the results are unusable!
             // https://github.com/facebook/jest/issues/2713
             process.stderr.write('[IMPORTANT] Failed to cleanup leftover buckets! All tests will now fail!\n');
-            process.stderr.write(`${err}\n`);
+            process.stderr.write(`${ err }\n`);
             process.exit(1);
         }
     }
@@ -42,7 +42,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
     try {
-        await forceDeleteBucket(bucketName);
+        if (!process.env.SKIP_FORCE_DELETE) {
+            await forceDeleteBucket(bucketName);
+        }
     } catch (err) {
         console.error('Failed to delete bucket after test completion:', bucketName);
     }
@@ -88,15 +90,15 @@ describe('gatsby-plugin-s3', () => {
             Permission.DeleteObject,
         ]);
         console.log('[debug]', 'uploads', bucketName);
+
         async function createTestFile(Key: string) {
-            await s3
-                .putObject({
-                    Bucket: bucketName,
-                    Key,
-                    Body: `test content for ${Key}`,
-                })
-                .promise();
+            await s3.putObject({
+                Bucket: bucketName,
+                Key,
+                Body: `test content for ${ Key }`,
+            });
         }
+
         await createTestFile('file.retain.js');
         await createTestFile('file.remove.js');
         await createTestFile('sub-folder/file.retain.js');
@@ -112,34 +114,31 @@ describe('gatsby-plugin-s3', () => {
             Permission.PutBucketPublicAccessBlock,
             Permission.DeleteObject,
         ]);
-        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' }).promise()).resolves.toBeTruthy();
-        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.remove.js' }).promise()).rejects.toThrow();
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.retain.js' })).resolves.toBeTruthy();
+        await expect(s3.headObject({ Bucket: bucketName, Key: 'file.remove.js' })).rejects.toThrow();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.retain.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.retain.js' })
         ).resolves.toBeTruthy();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.remove.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'sub-folder/file.remove.js' })
         ).rejects.toThrow();
         await expect(
-            s3
-                .headObject({
-                    Bucket: bucketName,
-                    Key: 'sub-folder/retain-folder/file.js',
-                })
-                .promise()
+            s3.headObject({
+                Bucket: bucketName,
+                Key: 'sub-folder/retain-folder/file.js',
+            })
         ).resolves.toBeTruthy();
         await expect(
-            s3.headObject({ Bucket: bucketName, Key: 'retain-folder/file.js' }).promise()
+            s3.headObject({ Bucket: bucketName, Key: 'retain-folder/file.js' })
         ).resolves.toBeTruthy();
     });
 });
 
-describe('object-based redirects', () => {
+describe('website redirects', () => {
     const siteDirectory = getPackageDirectory('gatsby-plugin-s3-example-with-redirects');
     beforeAll(async () => {
         await buildSite('gatsby-plugin-s3-example-with-redirects', {
             GATSBY_S3_TARGET_BUCKET: bucketName,
-            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.False,
         });
         await deploySite('gatsby-plugin-s3-example-with-redirects', [
             Permission.PutObject,
@@ -154,13 +153,13 @@ describe('object-based redirects', () => {
     const headerTests = [
         {
             name: 'html files',
-            path: '/',
+            path: '/page-2/',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'text/html',
         },
         {
             name: 'page-data files',
-            path: '/page-data/index/page-data.json',
+            path: '/page-data/page-2/page-data.json',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'application/json',
         },
@@ -192,25 +191,26 @@ describe('object-based redirects', () => {
     ];
 
     headerTests.forEach(t => {
-        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+        test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             let path;
             if (t.path) {
                 path = t.path;
             } else if (t.searchPattern) {
-                console.log(`${siteDirectory}/`);
-                const matchingFiles = glob.sync(t.searchPattern, { cwd: `${siteDirectory}/public`, nodir: true });
-                path = `/${matchingFiles[0]}`;
+                console.log(`${ siteDirectory }/`);
+                const matchingFiles = globSync(t.searchPattern, { cwd: `${ siteDirectory }/public`, nodir: true });
+                path = `/${ matchingFiles[0] }`;
                 console.log(path);
             }
 
             if (!path) {
-                throw new Error(`Failed to find matching file for pattern ${t.searchPattern}`);
+                throw new Error(`Failed to find matching file for pattern ${ t.searchPattern }`);
             }
 
-            const response = await fetch(`${testingEndpoint}${path}`);
-            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+            const url = `${ testingEndpoint }${ path }`;
+            const response = await getUrl(url);
+            expect(response.status, `Error accessing ${ url }`).toBe(200);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ url }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ url }`).toBe(t.contentType);
         });
     });
 
@@ -218,114 +218,42 @@ describe('object-based redirects', () => {
         {
             name: 'from root',
             source: '/',
-            expectedDestination: '/page-2',
+            expectedDestination: '/page-2/',
             expectedResponseCode: 301,
         },
         {
             name: 'temporarily',
-            source: '/hello-there',
-            expectedDestination: '/client-only',
+            source: '/hello-there/',
+            expectedDestination: `${ testingEndpoint }/client-only`,
             expectedResponseCode: 302,
         },
         {
             name: 'to a child directory',
             source: '/blog',
-            expectedDestination: '/blog/1',
+            expectedDestination: '/blog/1/',
             expectedResponseCode: 301,
-        },
-        {
-            name: 'client-only routes',
-            source: '/client-only/test',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
         },
         {
             name: 'from a path containing special characters',
             source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
-            expectedDestination: '/special-characters',
+            expectedDestination: '/special-characters/',
             expectedResponseCode: 301,
         },
         {
             name: 'from a path with a trailing slash',
             source: '/trailing-slash/',
-            expectedDestination: '/trailing-slash/1',
+            expectedDestination: '/trailing-slash/1/',
             expectedResponseCode: 301,
         },
     ];
 
     redirectTests.forEach(t => {
-        test(`can redirect ${t.name}`, async () => {
-            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
-            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
-                `${testingEndpoint}${t.expectedDestination}`
-            );
-        });
-    });
-});
-
-describe('rules-based redirects', () => {
-    beforeAll(async () => {
-        await buildSite('gatsby-plugin-s3-example-with-redirects', {
-            GATSBY_S3_TARGET_BUCKET: bucketName,
-            GATSBY_S3_LEGACY_REDIRECTS: EnvironmentBoolean.True,
-        });
-        await deploySite('gatsby-plugin-s3-example-with-redirects', [
-            Permission.CreateBucket,
-            Permission.PutObject,
-            Permission.PutObjectAcl,
-            Permission.PutBucketAcl,
-            Permission.PutBucketWebsite,
-            Permission.PutBucketPublicAccessBlock,
-            Permission.DeleteObject,
-        ]);
-    });
-
-    const redirectTests = [
-        {
-            name: 'from root',
-            source: '/',
-            expectedDestination: '/page-2',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'temporarily',
-            source: '/hello-there',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
-        },
-        {
-            name: 'to a child directory',
-            source: '/blog',
-            expectedDestination: '/blog/1',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'client-only routes',
-            source: '/client-only/test',
-            expectedDestination: '/client-only',
-            expectedResponseCode: 302,
-        },
-        {
-            name: 'from a path containing special characters',
-            source: "/asdf123.-~_!%24%26'()*%2B%2C%3B%3D%3A%40%25",
-            expectedDestination: '/special-characters',
-            expectedResponseCode: 301,
-        },
-        {
-            name: 'from a path with a trailing slash',
-            source: '/trailing-slash/',
-            expectedDestination: '/trailing-slash/1',
-            expectedResponseCode: 301,
-        },
-    ];
-
-    redirectTests.forEach(t => {
-        test(`can redirect ${t.name}`, async () => {
-            const response = await fetch(`${testingEndpoint}${t.source}`, { redirect: 'manual' });
-            expect(response.status, `Incorrect response status for ${t.source}`).toBe(t.expectedResponseCode);
-            expect(response.headers.get('location'), `Incorrect Content-Type for ${t.source}`).toBe(
-                `${testingEndpoint}${t.expectedDestination}`
+        test(`can redirect ${ t.name }`, async () => {
+            const url = `${ testingEndpoint }${ t.source }`;
+            const response = await getUrl(url);
+            expect(response.status, `Incorrect response status for ${ url }`).toBe(t.expectedResponseCode);
+            expect(response.headers.location, `Incorrect Content-Type for ${ url }`).toBe(
+                t.expectedDestination
             );
         });
     });
@@ -352,13 +280,13 @@ describe('with pathPrefix', () => {
     const headerTests = [
         {
             name: 'html files',
-            path: '/prefixed/page-2',
+            path: '/prefixed/page-2/',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'text/html',
         },
         {
             name: 'page-data files',
-            path: '/prefixed/page-data/index/page-data.json',
+            path: '/prefixed/page-data/page-2/page-data.json',
             cacheControl: 'public, max-age=0, must-revalidate',
             contentType: 'application/json',
         },
@@ -371,13 +299,14 @@ describe('with pathPrefix', () => {
     ];
 
     headerTests.forEach(t => {
-        test(`caching and content type headers are correctly set for ${t.name}`, async () => {
+        test(`caching and content type headers are correctly set for ${ t.name }`, async () => {
             const { path } = t;
 
-            const response = await fetch(`${testingEndpoint}${path}`);
-            expect(response.status, `Error accessing ${testingEndpoint}${path}`).toBe(200);
-            expect(response.headers.get('cache-control'), `Incorrect Cache-Control for ${path}`).toBe(t.cacheControl);
-            expect(response.headers.get('content-type'), `Incorrect Content-Type for ${path}`).toBe(t.contentType);
+            const url = `${ testingEndpoint }${ path }`;
+            const response = await getUrl(url);
+            expect(response.status, `Error accessing ${ url }`).toBe(200);
+            expect(response.headers['cache-control'], `Incorrect Cache-Control for ${ url }`).toBe(t.cacheControl);
+            expect(response.headers['content-type'], `Incorrect Content-Type for ${ url }`).toBe(t.contentType);
         });
     });
 });

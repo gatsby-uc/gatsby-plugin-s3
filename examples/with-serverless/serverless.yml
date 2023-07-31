@@ -22,14 +22,32 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.frontendBucketName}
-        AccessControl: PublicRead
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
         WebsiteConfiguration:
           IndexDocument: index.html
           ErrorDocument: 404.html
           RoutingRules: ${file(./.cache/s3.sls.routingRules.json)}
+    FrontendBucketPublic:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref FrontendBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Principal: '*'
+              Action: 's3:GetObject'
+              Effect: Allow
+              Resource: !Sub '${FrontendBucket.Arn}/*'
 
 # UNCOMMENT THE FOLLOWING if you wish to add cloudfront.
-# Be aware that cloudfront deploys take a long time so the deploy script may take up to 
+# Be aware that cloudfront deploys take a long time so the deploy script may take up to
 # 20 mins when deploying changes to the cloudfront configuration values.
 
 #    WebAppCloudFrontDistribution:
