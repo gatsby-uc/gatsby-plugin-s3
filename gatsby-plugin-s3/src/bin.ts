@@ -60,9 +60,7 @@ const guessRegion = async (region: string | Provider<string> | undefined): Promi
     return region();
 }
 
-const isNoSuchBucket = (error: Error): error is NoSuchBucket => {
-    return "name" in error && error.name === 'NoSuchBucket';
-}
+const isNoSuchBucket = (error: Error): error is NoSuchBucket => "name" in error && error.name === 'NoSuchBucket'
 
 const getBucketInfo = async (config: S3PluginOptions, s3: S3): Promise<{ exists: boolean; region?: string }> => {
     try {
@@ -135,13 +133,11 @@ export interface DeployArguments {
     userAgent?: string;
 }
 
-export const makeAgent = (proxy?: string): ProxyAgent | undefined => {
-    return proxy
-        ? new ProxyAgent({ getProxyForUrl: () => proxy })
-        : undefined;
-}
+export const makeAgent = (proxy?: string): ProxyAgent | undefined => proxy
+    ? new ProxyAgent({ getProxyForUrl: () => proxy })
+    : undefined
 
-export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) => {
+export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}): Promise<void> => {
     const spinner = ora({ text: 'Retrieving bucket info...', color: 'magenta', stream: process.stdout }).start();
     let dontPrompt = yes;
 
@@ -462,17 +458,19 @@ yargs
                 .option('yes', {
                     alias: 'y',
                     describe: 'Skip confirmation prompt',
-                    boolean: true,
+                    type: "boolean",
+                    boolean: true
                 })
                 .option('bucket', {
                     alias: 'b',
                     describe: 'Bucket name (if you wish to override default bucket name)',
+                    type: "string"
                 })
                 .option('userAgent', {
                     describe: 'Allow appending custom text to the User Agent string (Used in automated tests)',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                }) as any,
-        deploy as (args: { yes: boolean; bucket: string; userAgent: string }) => void
+                    type: "string"
+                }),
+        async (argv) => deploy(argv)
     )
     .wrap(yargs.terminalWidth())
     .demandCommand(1, `Pass --help to see all available commands and options.`)
