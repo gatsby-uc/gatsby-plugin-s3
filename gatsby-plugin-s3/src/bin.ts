@@ -23,8 +23,8 @@ import { config as awsConfig } from 'aws-sdk';
 import { createHash } from 'crypto';
 import isCI from 'is-ci';
 import { getS3WebsiteDomainUrl, withoutLeadingSlash } from './util';
-import { AsyncFunction, asyncify, parallelLimit } from 'async';
-import proxy from 'proxy-agent';
+import { AsyncFunction, asyncify, parallelLimit,  } from 'async';
+import { ProxyAgent } from 'proxy-agent';
 
 const pe = new PrettyError();
 
@@ -133,12 +133,16 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         let httpOptions = {};
         if (process.env.HTTP_PROXY) {
             httpOptions = {
-                agent: proxy(process.env.HTTP_PROXY),
+                agent: new ProxyAgent({
+                    getProxyForUrl: () => process.env.HTTP_PROXY || ""
+                }),
             };
         }
 
         httpOptions = {
-            agent: process.env.HTTP_PROXY ? proxy(process.env.HTTP_PROXY) : undefined,
+            agent: process.env.HTTP_PROXY ? new ProxyAgent({
+                getProxyForUrl: () => process.env.HTTP_PROXY || ""
+            }) : undefined,
             timeout: config.timeout,
             connectTimeout: config.connectTimeout,
             ...httpOptions,
