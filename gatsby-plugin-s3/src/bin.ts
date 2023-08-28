@@ -105,7 +105,11 @@ const createSafeS3Key = (key: string): string => {
     return key;
 };
 
-const isFileUnchanged = (s3Object: S3.Object, localStats: fs.Stats) => {
+const isFileUnchanged = (localStats: fs.Stats, s3Object?: S3.Object) => {
+
+    // If there's no S3 object it's a new file, so we'll say it's changed
+    if (!s3Object) return false;
+
     const remoteModifiedTime = s3Object.LastModified;
 
     if (remoteModifiedTime){
@@ -261,25 +265,25 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
         const isKeyInUse: { [objectKey: string]: boolean } = {};
 
         stream.on('data', ({ path, stats }) => {
-            if (!stats.isFile()) {
-                return;
-            }
-            
-            let key = createSafeS3Key(relative(publicDir, path));
-            if (config.bucketPrefix) {
-                key = `${config.bucketPrefix}/${key}`;
-            }
-            isKeyInUse[key] = true;
-
-            const objectUnchanged = isFileUnchanged(keyToObjectMap[key], stats);
-
-            if (objectUnchanged) {
-                spinner.text = chalk`Syncing...\n{dim   Skipping {cyan ${key}}} (unchanged)`;
-                return;
-            }
-
             uploadQueue.push(
                 asyncify(async () => {
+                    if (!stats.isFile()) {
+                        return;
+                    }
+                    
+                    let key = createSafeS3Key(relative(publicDir, path));
+                    if (config.bucketPrefix) {
+                        key = `${config.bucketPrefix}/${key}`;
+                    }
+                    isKeyInUse[key] = true;
+
+                    const objectUnchanged = isFileUnchanged(stats, keyToObjectMap[key]);
+
+                    if (objectUnchanged) {
+                        spinner.text = chalk`Syncing...\n{dim   Skipping {cyan ${key}}} (unchanged)`;
+                        return;
+                    }
+
                     try {
                         const upload = new S3.ManagedUpload({
                             service: s3,
@@ -311,30 +315,30 @@ export const deploy = async ({ yes, bucket, userAgent }: DeployArguments = {}) =
 
         const base = config.protocol && config.hostname ? `${config.protocol}://${config.hostname}` : null;
         redirectObjects.forEach(redirect => {
-            
-            const { fromPath, toPath: redirectPath } = redirect;
-            const redirectLocation = base ? resolveUrl(base, redirectPath) : redirectPath;
-
-            let key = withoutLeadingSlash(fromPath);
-            if (key.endsWith('/')) {
-                key = join(key, 'index.html');
-            }
-            key = createSafeS3Key(key);
-            if (config.bucketPrefix) {
-                key = withoutLeadingSlash(`${config.bucketPrefix}/${key}`);
-            }
-
-            const stats = fs.statSync(fromPath)
-            const objectUnchanged = isFileUnchanged(keyToObjectMap[key], stats);
-
-            isKeyInUse[key] = true;
-
-            if (objectUnchanged) {
-                return;
-            }
-
             uploadQueue.push(
                 asyncify(async () => {
+                                
+                    const { fromPath, toPath: redirectPath } = redirect;
+                    const redirectLocation = base ? resolveUrl(base, redirectPath) : redirectPath;
+
+                    let key = withoutLeadingSlash(fromPath);
+                    if (key.endsWith('/')) {
+                        key = join(key, 'index.html');
+                    }
+                    key = createSafeS3Key(key);
+                    if (config.bucketPrefix) {
+                        key = withoutLeadingSlash(`${config.bucketPrefix}/${key}`);
+                    }
+
+                    const stats = fs.statSync(fromPath)
+                    const objectUnchanged = isFileUnchanged(stats, keyToObjectMap[key]);
+
+                    isKeyInUse[key] = true;
+
+                    if (objectUnchanged) {
+                        return;
+                    }
+
                     try {
                         const upload = new S3.ManagedUpload({
                             service: s3,
